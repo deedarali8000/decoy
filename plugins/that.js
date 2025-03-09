@@ -114,7 +114,7 @@ const LogoCmd = async (_0x2251e0, _0x3b8c41) => {
       serverMessageId: -1
     };
     const _0x3c9ddd = {
-      title: "𝖳𝖱𝖤𝖷 𝖬𝖣 𝖫𝖮𝖦𝖮 𝖬𝖤𝖭𝖴",
+      title: "ʙᴇʀᴀ ᴛᴇᴄʜ ʟᴏɢᴏ ᴍᴇɴᴜ",
       body: _0x2b06df,
       thumbnailUrl: "https://files.catbox.moe/349sci.jpg",
       sourceUrl: "",
