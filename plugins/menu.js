@@ -46,15 +46,15 @@ const allMenu = async (m, sock) => {
           isForwarded: true,
           forwardingScore: 999,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: '', // Preserved newsletter JID
-            newsletterName: "",
+            newsletterJid: '120363315115438245@newsletter', // Preserved newsletter JID
+            newsletterName: "𝖱𝖾𝗀𝖺𝗋𝖽𝗌 𝖡𝖾𝗋𝖺 𝖳𝖾𝖼𝗁",
             serverMessageId: -1,
           },
           externalAdReply: {
-            title: "",
+            title: "BERA TECH BOT",
             body: pushName,
             thumbnailUrl: 'https://files.catbox.moe/7xgzln.jpg', // Thumbnail URL
-            sourceUrl: 'https://files.catbox.moe/tdhhl5.mp3', // Source URL
+            sourceUrl: 'https://files.catbox.moe/mg8i5b.mp3', // Source URL
             mediaType: 1,
             renderLargerThumbnail: true,
           },
@@ -65,16 +65,10 @@ const allMenu = async (m, sock) => {
   };
 
   // Command: allmenu
-  if (cmd === "menu") {
+  if (cmd === "list") {
     await m.React('⏳'); // React with a loading icon
-    const aliveMessage = `
- 
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
+    const listMessage = `
+
 ╭━━━〔 *BERA TECH BOT* 〕━━━┈⊷
 ┃★╭──────────────
 ┃★│ Developer : *BRUCE BERA*
@@ -217,7 +211,7 @@ const allMenu = async (m, sock) => {
 `;
 
     await m.React('✅'); // React with success icon
-    await sendCommandMessage(aliveMessage);
+    await sendCommandMessage(listMessage);
   }
 // islamic menu 
   if (cmd === "islamicmenu") {
@@ -244,16 +238,11 @@ const allMenu = async (m, sock) => {
 await m.React('✅'); // React with success icon
     await sendCommandMessage(islamicmenuMessage);
   }
-if (cmd === "mainmenu") {
+if (cmd === "menu") {
     await m.React('🦖'); // React with a loading icon
 
-    const mainmenuMessage = `
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
+    const menuMessage = `
+
 ╭━━━〔 *ʙᴇʀᴀ ᴛᴇᴄʜ* 〕━━━┈⊷
 ┃★╭──────────────
 ┃★│ ᴅᴇᴠᴇʟᴏᴘᴇʀ : *ʙʀᴜᴄᴇ ʙᴇʀᴀ*
@@ -367,7 +356,7 @@ if (cmd === "mainmenu") {
 ╰━━━━━━━━━━━━━━━⪼`;
 
 await m.React('✅'); // React with success icon
-    await sendCommandMessage(mainmenuMessage);
+    await sendCommandMessage(menuMessage);
   }
  // Command: downloadmenu
   if (cmd === "downloadmenu") {
