@@ -35,7 +35,7 @@ const video = async (m, Matrix) => {
 
   try {
     // Call API to fetch video details
-    const apiUrl = `https://api.davidcyriltech.my.id/download/ytmp4?url=${videoUrl}`;
+    const apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${videoUrl}`;
     const { data } = await axios.get(apiUrl);
 
     if (!data.success) {
@@ -53,8 +53,8 @@ const video = async (m, Matrix) => {
         forwardingScore: 999,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-          newsletterJid: '120363299029326322@newsletter',
-          newsletterName: "ᴅᴇᴍᴏɴ sʟᴀʏᴇʀ",
+          newsletterJid: '',
+          newsletterName: "",
           serverMessageId: 143
         }
       }
