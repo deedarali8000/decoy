@@ -1,4 +1,4 @@
-// Sarkar-MD Temporary Email Command - POWERED BY BANDAHEALI
+// Temporary Email Command - POWERED BY Bera
 
 import axios from "axios";
 
@@ -32,7 +32,7 @@ const tempmail = async (m, gss) => {
 
         const expiry = data.BK9[2];
 
-        const message = `🖥️ *Temporary Email*\n\n📧 Email: ${email}\n🆔 Session ID: ${sessionId}\n⏰ Expiry: ${expiry}\n\n😍 CREATED BY BANDAHEALI 😍`;
+        const message = `🖥️ *Temporary Email*\n\n📧 Email: ${email}\n🆔 Session ID: ${sessionId}\n⏰ Expiry: ${expiry}\n\n `;
 
         await gss.sendMessage(
 
