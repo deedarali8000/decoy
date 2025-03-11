@@ -1,79 +1,72 @@
 import moment from 'moment-timezone';
+import fs from 'fs';
+import os from 'os';
 import pkg from '@whiskeysockets/baileys';
 const { generateWAMessageFromContent, proto } = pkg;
-import config from '../../config.cjs';
+import config from '../config.cjs';
 
-const allMenu = async (m, sock) => {
-  const prefix = config.PREFIX;
-  const mode = config.MODE;
-  const pushName = m.pushName || 'User';
+// Get total memory and free memory in bytes
+const totalMemoryBytes = os.totalmem();
+const freeMemoryBytes = os.freemem();
 
-  const cmd = m.body.startsWith(prefix)
-    ? m.body.slice(prefix.length).split(' ')[0].toLowerCase()
-    : '';
-    
-        // Calculate uptime
-    const uptimeSeconds = process.uptime();
-    const days = Math.floor(uptimeSeconds / (24 * 3600));
-    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = Math.floor(uptimeSeconds % 60);
-    //realtime function
-        const realTime = moment().tz("Tanzania/Dodoma").format("HH:mm:ss");
-// pushwish function
-    let pushwish = "";
-    
-        if (realTime < "05:00:00") {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
-} else if (realTime < "11:00:00") {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
-} else if (realTime < "15:00:00") {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙰𝙵𝚃𝙴𝚁𝙽𝙾𝙾𝙽 🌅`;
-} else if (realTime < "18:00:00") {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙴𝚅𝙴𝙽𝙸𝙽𝙶 🌃`;
-} else if (realTime < "19:00:00") {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙴𝚅𝙴𝙽𝙸𝙽𝙶 🌃`;
-} else {
-  pushwish = `𝙶𝙾𝙾𝙳 𝙽𝙸𝙶𝙷𝚃 🌌`;
+// Define unit conversions
+const byteToKB = 1 / 1024;
+const byteToMB = byteToKB / 1024;
+const byteToGB = byteToMB / 1024;
+
+// Function to format bytes to a human-readable format
+function formatBytes(bytes) {
+  if (bytes >= Math.pow(1024, 3)) {
+    return (bytes * byteToGB).toFixed(2) + ' GB';
+  } else if (bytes >= Math.pow(1024, 2)) {
+    return (bytes * byteToMB).toFixed(2) + ' MB';
+  } else if (bytes >= 1024) {
+    return (bytes * byteToKB).toFixed(2) + ' KB';
+  } else {
+    return bytes.toFixed(2) + ' bytes';
+  }
 }
 
-  const sendCommandMessage = async (messageContent) => {
-    await sock.sendMessage(
-      m.from,
-      {
-        text: messageContent,
-        contextInfo: {
-          isForwarded: true,
-          forwardingScore: 999,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363315115438245@newsletter', // Preserved newsletter JID
-            newsletterName: "𝖱𝖾𝗀𝖺𝗋𝖽𝗌 𝖡𝖾𝗋𝖺 𝖳𝖾𝖼𝗁",
-            serverMessageId: -1,
-          },
-          externalAdReply: {
-            title: "BERA TECH BOT",
-            body: pushName,
-            thumbnailUrl: 'https://files.catbox.moe/7xgzln.jpg', // Thumbnail URL
-            sourceUrl: 'https://files.catbox.moe/mg8i5b.mp3', // Source URL
-            mediaType: 1,
-            renderLargerThumbnail: true,
-          },
-        },
-      },
-      { quoted: m }
-    );
-  };
+// Bot Process Time
+const uptime = process.uptime();
+const day = Math.floor(uptime / (24 * 3600)); // Calculate days
+const hours = Math.floor((uptime % (24 * 3600)) / 3600); // Calculate hours
+const minutes = Math.floor((uptime % 3600) / 60); // Calculate minutes
+const seconds = Math.floor(uptime % 60); // Calculate seconds
 
-  // Command: allmenu
+// Uptime
+const uptimeMessage = `*I am alive now since ${day}d ${hours}h ${minutes}m ${seconds}s*`;
+const runMessage = `*☀️ ${day} Day*\n*🕐 ${hours} Hour*\n*⏰ ${minutes} Minutes*\n*⏱️ ${seconds} Seconds*\n`;
 
+const xtime = moment.tz("Asia/Colombo").format("HH:mm:ss");
+const xdate = moment.tz("Asia/Colombo").format("DD/MM/YYYY");
+const time2 = moment().tz("Asia/Colombo").format("HH:mm:ss");
+let pushwish = "";
 
-// islamic menu 
+if (time2 < "05:00:00") {
+  pushwish = `Good Morning 🌄`;
+} else if (time2 < "11:00:00") {
+  pushwish = `Good Morning 🌄`;
+} else if (time2 < "15:00:00") {
+  pushwish = `Good Afternoon 🌅`;
+} else if (time2 < "18:00:00") {
+  pushwish = `Good Evening 🌃`;
+} else if (time2 < "19:00:00") {
+  pushwish = `Good Evening 🌃`;
+} else {
+  pushwish = `Good Night 🌌`;
+}
 
+const test = async (m, Matrix) => {
+  const prefix = config.PREFIX;
+  const cmd = m.body.startsWith(prefix) ? m.body.slice(prefix.length).split(' ')[0].toLowerCase() : '';
+  const mode = config.MODE === 'public' ? 'public' : 'private';
+  const pref = config.PREFIX;
 
-if (cmd === "menu") {
-    await m.React('🦖'); // React with a loading icon
+  const validCommands = ['list', 'help1', 'menu'];
 
-    const menuMessage = `
+  if (validCommands.includes(cmd)) {
+    const str = `
 ╭───━═━═━⊷ 
 🤖 𝗕𝗢𝗧 𝗡𝗔𝗠𝗘: *_ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ_*
 📟 𝗩𝗘𝗥𝗦𝗜𝗢𝗡: *_1.0.0_*
@@ -83,7 +76,13 @@ if (cmd === "menu") {
 🌐 *ᴍᴏᴅᴇ:* ${mode}
 ⏰ *ᴛɪᴍᴇ:* ${realTime}
 🚀 *ᴜᴘᴛɪᴍᴇ:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───━━═━═━⊷
+╰───━═━═━⊷
+
+━━━━━🌟━━━━━
+
+✨ ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ ᴄᴏᴍᴍᴀɴᴅ ʟɪsᴛ ✨
+
+ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴍʏ ᴀᴡᴇsᴏᴍᴇ ᴍᴇɴᴜ
 
 ╭━━━━◈ SYSTEM ◈━━━╮
 *➤* ${prefix}𝗣𝗶𝗻𝗴
@@ -223,246 +222,36 @@ if (cmd === "menu") {
 *➤* ${prefix}𝗟𝘆𝗿𝗶𝗰𝘀 
 ╰━━━━━━━◈━━━━━━━╯
 
+*🌐 𝗠𝗢𝗥𝗘 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 𝗖𝗢𝗠𝗜𝗡𝗚 𝗦𝗢𝗢𝗡! 🌐
+
 ╭───────────❍
 │😇𝗥𝗘𝗚𝗔𝗥𝗗𝗦 𝗕𝗥𝗨𝗖𝗘 𝗕𝗘𝗥𝗔😇
 ╰───────────❍`;
 
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(menuMessage);
-  }
- // Command: downloadmenu
-  if (cmd === "downloadmenu") {
-    await m.React('⏳'); // React with a loading icon
+    await Matrix.sendMessage(m.from, {
+      image: fs.readFileSync('./media/bera.jpg'),
+      caption: str,
+      contextInfo: {
+        mentionedJid: [m.sender],
+        forwardingScore: 999,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: '120363315115438245@newsletter',
+          newsletterName: "regards Bruce Bera",
+          serverMessageId: 143
+        }
+      }
+    }, {
+      quoted: m
+    });
 
-    const downloadmenuMessage = `
-
-   
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
- ╭───❍「 *DOWNLOAD MENU * 」
-*┋*⏬️ *${prefix}Fb*
-*┋*⏬️ *${prefix}Insta*
-*┋*⏬️ *${prefix}Insta2*
-*┋*⏬️ *${prefix}Play*
-*┋*⏬️ *${prefix}Song*
-*┋*⏬️ *${prefix}Video*
-*┋*⏬️ *${prefix}TwitAudio*
-*┋*⏬️ *${prefix}Tiktok*
-*┋*⏬️ *${prefix}Tiktok2*
-*┋*⏬️ *${prefix}MediaFire2*
-*┋*⏬️ *${prefix}Apk*
- ╰───────────❍   
-╭───────────❍
-│ʙᴇʀᴀ ᴛᴇᴄʜ
-╰──────────
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(downloadmenuMessage);
-  }
-  // Command: aimenu
-  if (cmd === "aimenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const aimenuMessage = `
-╭───❍「 *TREX MD* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ* 」
-*┋*🧠 *${prefix}𝙶𝚙𝚝*
-*┋*🧠 *${prefix}𝙼𝚎𝚝𝚊*
-*┋*🧠 *${prefix}𝙱𝚕𝚊𝚌𝚔𝙱𝚘𝚡*
-*┋*🧠 *${prefix}𝙻𝚕𝚊𝚖𝚊*
-*┋*🧠 *${prefix}𝙲𝚕𝚊𝚞𝚍𝚎*
-*┋*🧠 *${prefix}𝙼𝚒𝚡𝚝𝚛𝚊𝚕*
-╰───────────❍
-╭───────────❍
-│ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ
-╰───────────❍
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(aimenuMessage);
-  }
-  // Command: groupmenu
-  if (cmd === "logomenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const logomenuMessage = `
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
- ╭───❍「 *𝗕𝗘𝗥𝗔 𝗧𝗘𝗖𝗛 𝗕𝗢𝗧* 」
-*┋* ©️ ${prefix}𝗅𝗈𝗀𝗈
-*┋* ©️ ${prefix}𝖻𝗅𝖺𝖼𝗄𝗉𝗂𝗇𝗄
-*┋* ©️ ${prefix}𝗀𝗈𝗌𝗌𝗒𝗌𝗂𝗅𝗏𝖾𝗋
-*┋* ©️ ${prefix}𝗇𝖺𝗋𝗎to
-*┋* ©️ ${prefix}𝖽𝗂𝗀𝗂𝗍𝖺𝗅𝗀𝗅𝗂𝗍𝖼𝗁
-*┋* ©️ ${prefix}𝗉𝗂𝗑𝖾𝗅𝗀𝗅𝗂𝗍𝖼𝗁
-*┋* ©️ ${prefix}𝗌𝗍𝖺𝗋
-*┋* ©️ ${prefix}𝗌𝗆𝗈𝗄𝖾
-*┋* ©️ ${prefix}𝖻𝖾𝖺𝗋*
-*┋* ©️ ${prefix}𝗇𝖾𝗈𝗇𝖽𝖾𝗏𝗂𝗅
-*┋* ©️ ${prefix}𝗌𝖼𝗋𝖾𝖾𝗇
-*┋* ©️ ${prefix}𝗇𝖺𝗍𝗎𝗋𝖾*
-*┋* ©️ ${prefix}𝖽𝗋𝖺𝗀𝗈𝗇𝖻𝖺𝗅𝗅
-*┋* ©️ ${prefix}𝖿𝗈𝗀𝗀𝗒𝗀𝗅𝖺𝗌𝗌
-*┋* ©️ ${prefix}𝗇𝖾𝗈𝗇𝗅𝗂𝗀𝗁𝗍
-*┋* ©️ ${prefix}𝖼𝖺𝗌𝗍𝗅𝖾𝗉𝗈𝗉
-*┋* ©️ ${prefix}𝖿𝗋𝗈𝗓𝖾𝗇𝖼𝗁𝗋𝗂𝗌𝗍𝗆𝖺𝗌
-*┋* ©️ ${prefix}𝖿𝗈𝗂𝗅𝖻𝖺𝗅𝗅𝗈𝗈𝗇
-*┋* ©️ ${prefix}𝖼𝗈𝗅𝗈𝗋𝖿𝗎𝗅𝗉𝖺𝗂𝗇𝗍
-*┋* ©️ ${prefix}𝖺𝗆𝖾𝗋𝗂𝖼𝖺𝗇𝖿𝗅𝖺𝗀
-*┋* ©️ ${prefix}𝗇𝖾𝗈𝗇𝖽𝖾𝗏𝗂𝗅
-╭───────────❍
-│ʙᴇʀᴀ ᴛᴇᴄʜ
-╰───────────❍
-`;
-
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(logomenuMessage);
-  }
-  // Command: joel
-  if (cmd === "groupmenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const stalkerMessage = `
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ* 
-*┋* 🫂 *${prefix}𝙾𝚙𝚎𝚗*
-*┋* 🫂 *${prefix}𝙲𝚕𝚘𝚜𝚎*
-*┋* 🫂 *${prefix}𝚃𝚊𝚐𝚊𝚕𝚕*
-*┋* 🫂 *${prefix}𝙺𝚒𝚌𝚔*
-*┋* 🫂 *${prefix}𝙰𝚍𝚍*
-*┋* 🫂 *${prefix}𝙳𝚒𝚜 24𝚑*
-*┋* 🫂 *${prefix}𝙸𝚗𝚟𝚒𝚝𝚎*
-╭───────────❍
-│ʙᴇʀᴀ ᴛᴇᴄʜ
-╰───────────❍
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(stalkerMessage);
-  }
- 
-  // Command: allmenu
-  if (cmd === "searchmenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const stickerMessage = `
-╭───❍「 *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
- ╭───❍「 *TREX MD* 」
-*┋*📡 *${prefix}𝚈𝚝𝚜*
-*┋*📡 *${prefix}𝙶𝚒𝚝𝚜*
-*┋*📡 *${prefix}𝚃𝚒𝚔𝚜*
-*┋*📡 *${prefix}𝚆𝚊𝚕𝚕𝚙𝚊𝚙𝚎𝚛*
-*┋*📡 *${prefix}𝚂𝚙𝚘𝚝𝚒𝚏𝚢*
-╰───────────❍
-╭───────────❍
-│ʀᴇɢᴀʀᴅs ʙʀᴜᴄᴇ ʙᴇʀᴀ
-╰───────────❍
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(stickerMessage);
-  }
-  // Command: ownermenu
-  if (cmd === "ownermenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const ownerMessage = `
-    ╭───❍「 *TREX MD* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
- ╭───❍「 *BERA TECH* 」
-*┋*💫 *${prefix}𝚁𝚎𝚜𝚝𝚊𝚛𝚝*
-*┋*💫 *${prefix}𝙾𝚠𝚗𝚎𝚛𝚁𝚎𝚊𝚌𝚝*
-*┋*💫 *${prefix}𝙷𝚎𝚊𝚛𝚝𝚁𝚎𝚊𝚌𝚝*
-*┋*💫 *${prefix}𝙹𝚘𝚒𝚗*
-*┋*💫 *${prefix}𝙻𝚎𝚏𝚝*
-*┋*💫 *${prefix}𝙱𝚛𝚘𝚊𝚍𝚌𝚊𝚜𝚝*
-*┋*💫 *${prefix}𝚅𝚟*
-*┋*💫 *${prefix}𝚅𝚟2*
-*┋*💫 *${prefix}𝙳𝚎𝚕𝚎𝚝𝚎*
-*┋*💫 *${prefix}𝚂𝚊𝚟𝚎*
-╭───────────❍
-│HELLO ${pushName} ${pushwish}
-╰───────────❍
-`;
-
-    await m.React('✅'); // React with success icon
-    await sendCommandMessage(ownerMessage);
-  }
-  //Command: othermenu
-  if (cmd === "othermenu") {
-    await m.React('⏳'); // React with a loading icon
-
-    const otherMessage = `
-╭───❍「 *TREX MD* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-╭───❍「 *BERA TECH* 」
-*│ *🗿 *${prefix}𝙿𝚒𝚗𝚐*
-*│ *🗿 *${prefix}𝙰𝚋𝚘𝚞𝚝*
-*│ *🗿 *${prefix}𝚛𝚎𝚙𝚘*
-*│ *🗿 *${prefix}𝙰𝚕𝚒𝚟𝚎*
-*│ *🗿 *${prefix}𝚄𝚛𝚕*
-*│ *🗿 *${prefix}𝚂𝚎𝚗𝚍𝚖𝚎*
-╰───────────❍   
-╭───────────❍
-│BERA TECH
-╰───────────❍
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(otherMessage);
-  }
-    if (cmd === "toolsmenu") {
-    await m.React('⏳'); // React with a loading icon
-    const toolsMessage = `
-╭───❍「 *TREX MD* 」
-│ 🧑‍💻 *𝚄𝚜𝚎𝚛:* ${pushName} ${pushwish}
-│ 🌐 *𝙼𝚘𝚍𝚎:* ${mode}
-│ ⏰ *𝚃𝚒𝚖𝚎:* ${realTime}
-│ 🚀 *𝚄𝚙𝚃𝚒𝚖𝚎:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-╭───❍「 *BERA TECH* 」
-*┋*🛡  * ${prefix}𝚂𝚜 *
-*┋*🛡  * ${prefix}𝚆𝚎𝚋𝚜𝚜 *
-*┋*🛡  * ${prefix}𝙵𝚞𝚕𝚕𝚜𝚜 *
-*┋*🛡  * ${prefix}𝚃𝚛𝚝 *
-*┋*🛡  * ${prefix}𝙵𝚎𝚝𝚌𝚑 *
-*┋*🛡  * ${prefix}𝚃𝚎𝚡𝚝2𝚒𝚖𝚐 *
-╰───────────❍  
-╭───────────❍
-│THANKS ${pushName} ${pushwish}
-╰───────────❍
-`;
-await m.React('✅'); // React with success icon
-    await sendCommandMessage(toolsMessage);
+    // Send audio after sending the menu
+    await Matrix.sendMessage(m.from, {
+      audio: { url: 'https://files.catbox.moe/tdhhl5.mp3' },
+      mimetype: 'audio/mp4',
+      ptt: true
+    }, { quoted: m });
   }
 };
-// coded by Bera Change
 
-export default allMenu;
+export default test;
