@@ -20,7 +20,7 @@ const ipStalk = async (m, gss) => {
     if (data.status) {
       const ipData = data.BK9;
 
-      let responseMessage = `🌍 *Sarkar-MD IP Stalker*\n\n`;
+      let responseMessage = `🌍 *BERA TECH IP Stalker*\n\n`;
       responseMessage += `  ◦  *IP*: ${ipData.ip}\n`;
       responseMessage += `  ◦  *Continent*: ${ipData.continent}\n`;
       responseMessage += `  ◦  *Country*: ${ipData.country} (${ipData.countryCode})\n`;
@@ -38,7 +38,7 @@ const ipStalk = async (m, gss) => {
       responseMessage += `  ◦  *Mobile*: ${ipData.mobile ? 'Yes' : 'No'}\n`;
       responseMessage += `  ◦  *Proxy*: ${ipData.proxy ? 'Yes' : 'No'}\n`;
       responseMessage += `  ◦  *Hosting*: ${ipData.hosting ? 'Yes' : 'No'}\n\n`;
-      responseMessage += `🔖 *POWERED BY SARKAR-MD*\n🎯 *CREATED BY BANDAHEALI*\n`;
+      responseMessage += `🔖 *ʀᴇɢᴀʀᴅs ʙʀᴜᴄᴇ ʙᴇʀᴀ*\n🎯 *ᴅᴇᴠᴇʟᴏᴘᴇʀ ʙᴇʀᴀ*\n`;
 
       await gss.sendMessage(m.from, { text: responseMessage }, { quoted: m });
     } else {
