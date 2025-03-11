@@ -5,7 +5,7 @@ import axios from 'axios';
 const handleRepoCommand = async (m, Matrix) => {
   try {
     // Fetch Repository Info
-    const repoLink = 'https://github.com/DEVELOPER-BERA/decoy';
+    const repoLink = 'https://github.com/DEVELOPER-BERA/BERA-TECH';
     const repoOwner = 'BRUCE BERA';
     const repoName = 'BERA TECH';
 
@@ -43,8 +43,8 @@ const handleRepoCommand = async (m, Matrix) => {
     await m.react('✅');
   } catch (error) {
     console.error('Error processing your request:', error);
-    m.reply('❌ Error processing your request.');
-    await m.react('❌');
+    m.reply('');
+    await m.react('🥲');
   }
 };
 
