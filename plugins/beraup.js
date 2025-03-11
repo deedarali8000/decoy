@@ -33,17 +33,17 @@ const text = m.body || m.message?.conversation || '';
   const seconds = Math.floor(uptimeSeconds % 60);
 
   const uptimeMessage = `╭──────────◆
-│  *SARKAR-MD STATUS*
+│  *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ*
 │───────────◆
-│ *Uptime Details:*
-│  *Days:* ${days}
-│  *Hours:* ${hours}
-│  *Minutes:* ${minutes}
-│  *Seconds:* ${seconds}
+│ *ᴜᴘᴛɪᴍᴇ ɪɴғᴏ:*
+│  *📆ᴅᴀʏs:* ${days}
+│  *🕰️ʜᴏᴜʀs:* ${hours}
+│  *⏳ᴍɪɴᴜᴛᴇs:* ${minutes}
+│  *⏲️sᴇᴄᴏɴᴅs:* ${seconds}
 │───────────◆
-│   ©Sarkar-MD
+│   ©ʀᴇɢᴀʀᴅs ʙᴇʀᴀ ᴛᴇᴄʜ
 ╰──────────◆`;
-  
+   
   const msg = generateWAMessageFromContent(
     m.from,
 
