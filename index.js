@@ -52,7 +52,7 @@ async function downloadSessionData() {
         console.error('Please add your session to SESSION_ID env !!');
         return false;
     }
-    const sessdata = config.SESSION_ID.split("BERA-MD=")[1];
+    const sessdata = config.SESSION_ID.split("BERA-TECH$")[1];
     const url = `https://pastebin.com/raw/${sessdata}`;
     try {
         const response = await axios.get(url);
@@ -83,7 +83,7 @@ async function start() {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "demon-slayer whatsapp user bot" };
+                return { conversation: "Bera tech bot whatsapp user bot" };
             }
         });
 
@@ -95,9 +95,9 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("Demon slayer Connected"));
+                    console.log(chalk.green("Bera tech bot Connected"));
             Matrix.sendMessage(Matrix.user.id, { 
-                image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
+                image: { url: "https://files.catbox.moe/ozxp4z.jpg" }, 
                 caption: `╭─────────────━┈⊷
 │ *BERA TECH BOT*
 ╰─────────────━┈⊷
