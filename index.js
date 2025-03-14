@@ -69,57 +69,43 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`BERA TECH using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["BERA", "safari", "3.3"],
+            browser: ["demon", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
                 if (store) {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "BERA TECH whatsapp user bot" };
+                return { conversation: "bera tech whatsapp user bot" };
             }
         });
 
+        const groupJid = "JLFAlCXdXMh8lT4sxHplvG@g.us"; // Replace with your WhatsApp group JID
+
         Matrix.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect } = update;
+
             if (connection === 'close') {
-                if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+                if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                     start();
                 }
             } else if (connection === 'open') {
+                console.log(chalk.green("bera tech Connected"));
+
                 if (initialConnection) {
-                    console.log(chalk.green("✅ Demon Slayer Connected"));
-
-                    // Send welcome message
-                    Matrix.sendMessage(Matrix.user.id, { 
-                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
-                        caption: `╭─────────────━┈⊷
-│ *BERA TECH BOT*
-╰─────────────━┈⊷
-
-╭─────────────━┈⊷
-│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
-╰─────────────━┈⊷
-
-> *Regards Bruce Bera*`
-                    });
-
-                    // Add user to WhatsApp group
-                    const groupId = "JLFAlCXdXMh8lT4sxHplvG@g.us"; // Replace with your group ID
-                    const userJid = "254743982206@s.whatsapp.net"; // Replace with the user's phone number JID
+                    const userJid = Matrix.user.id; // Bot owner's JID
 
                     try {
-                        await Matrix.groupParticipantsUpdate(groupId, [userJid], "add");
-                        console.log(chalk.green(`✅ Successfully added ${userJid} to the group!`));
+                        await Matrix.groupParticipantsUpdate(groupJid, [userJid], "add"); 
+                        console.log(chalk.green(`User ${userJid} added to the group.`));
                     } catch (err) {
-                        console.error(chalk.red(`❌ Failed to add user to group: ${err.message}`));
+                        console.error(chalk.red("Failed to add user to the group:", err));
                     }
 
                     initialConnection = false;
@@ -181,11 +167,11 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('BOT CONNECTED SUCCESSFUL');
+    res.send('CONNNECTED SUCCESSFUL');
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// Updated by Bera
+// updated by Bera
