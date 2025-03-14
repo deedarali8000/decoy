@@ -13,132 +13,133 @@ const allMenu = async (m, sock) => {
     ? m.body.slice(prefix.length).split(' ')[0].toLowerCase()
     : '';
 
-  // Calculate uptime
+  // Uptime calculation
   const uptimeSeconds = process.uptime();
   const days = Math.floor(uptimeSeconds / (24 * 3600));
   const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
   const minutes = Math.floor((uptimeSeconds % 3600) / 60);
   const seconds = Math.floor(uptimeSeconds % 60);
 
-  // Realtime function
+  // Real-time function
   const realTime = moment().tz("Africa/Dar_es_Salaam").format("HH:mm:ss");
 
   // Push wish function
   let pushwish = "";
   if (realTime < "05:00:00") {
-    pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
+    pushwish = `Good Morning 🌄`;
   } else if (realTime < "11:00:00") {
-    pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
+    pushwish = `Good Morning 🌄`;
   } else if (realTime < "15:00:00") {
-    pushwish = `𝙶𝙾𝙾𝙳 𝙰𝙵𝚃𝙴𝚁𝙽𝙾𝙾𝙽 🌅`;
+    pushwish = `Good Afternoon 🌅`;
   } else if (realTime < "19:00:00") {
-    pushwish = `𝙶𝙾𝙾𝙳 𝙴𝚅𝙴𝙽𝙸𝙽𝙶 🌃`;
+    pushwish = `Good Evening 🌃`;
   } else {
-    pushwish = `𝙶𝙾𝙾𝙳 𝙽𝙸𝙶𝙷𝚃 🌌`;
+    pushwish = `Good Night 🌌`;
   }
 
-  const sendButtonMessage = async (messageContent, buttons) => {
+  const sendButtonMessage = async (title, message, buttons) => {
     const buttonMessage = {
-      text: messageContent,
-      footer: "Powered by Bera Tech 🚀",
-      buttons: buttons,
-      headerType: 1,
+      templateMessage: {
+        hydratedTemplate: {
+          hydratedContentText: message,
+          locationMessage: { jpegThumbnail: null },
+          hydratedFooterText: "Powered by Bera Tech 🚀",
+          hydratedButtons: buttons,
+        },
+      },
     };
 
-    await sock.sendMessage(m.from, buttonMessage, { quoted: m });
+    const preparedMessage = generateWAMessageFromContent(m.from, proto.Message.fromObject(buttonMessage), {});
+    await sock.relayMessage(m.from, preparedMessage.message, { messageId: preparedMessage.key.id });
   };
 
   // Command: menu
-  if (cmd === "menu") {
-    await m.React('⏳');
+  if (cmd === "menu1") {
+    await m.react('⏳');
     const menuMessage = `
-╭━━━〔 *Bera Tech Bot* 〕━━━┈⊷
+╭━━━〔 *Bera Tech Bot* 〕━━━⊷
 ┃★ Developer: *Bruce Bera*
-┃★ User: *${m.pushName}*
+┃★ User: *${pushName}*
 ┃★ Mode: *${mode}*
 ┃★ Platform: *${os.platform()}*
 ┃★ Prefix: [${prefix}]
 ┃★ Version: *1.0.0*
-╰━━━━━━━━━━━━━━━┈⊷ 
+╰━━━━━━━━━━━━━━━⊷
 
-> *Hey ${m.pushName}, ${pushwish}*
-Here are the available commands:
-`;
+Hey *${pushName}*, ${pushwish}
+Here are the available menus:`;
 
     const buttons = [
-      { buttonId: `${prefix}mainmenu`, buttonText: { displayText: "📌 Main Menu" }, type: 1 },
-      { buttonId: `${prefix}islamicmenu`, buttonText: { displayText: "☪ Islamic Menu" }, type: 1 },
-      { buttonId: `${prefix}downloadmenu`, buttonText: { displayText: "⬇ Download Menu" }, type: 1 },
+      { quickReplyButton: { displayText: "📌 Main Menu", id: `${prefix}mainmenu` } },
+      { quickReplyButton: { displayText: "☪ Islamic Menu", id: `${prefix}islamicmenu` } },
+      { quickReplyButton: { displayText: "⬇ Download Menu", id: `${prefix}downloadmenu` } },
     ];
 
-    await m.React('✅');
-    await sendButtonMessage(menuMessage, buttons);
+    await m.react('✅');
+    await sendButtonMessage("Main Menu", menuMessage, buttons);
   }
 
   // Command: islamicmenu
   if (cmd === "islamicmenu") {
-    await m.React('⏳');
+    await m.react('⏳');
     const islamicMenuMessage = `
 ╭───❍「 *Islamic Menu* 」
 │ 🧑‍💻 *User:* ${pushName} ${pushwish}
 │ 🌐 *Mode:* ${mode}
 │ ⏰ *Time:* ${realTime}
 │ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-`;
+╰───────────❍`;
 
     const buttons = [
-      { buttonId: `${prefix}surahaudio`, buttonText: { displayText: "📖 Surah Audio" }, type: 1 },
-      { buttonId: `${prefix}surahurdu`, buttonText: { displayText: "📜 Surah Urdu" }, type: 1 },
-      { buttonId: `${prefix}asmaulhusna`, buttonText: { displayText: "🕌 Asmaul Husna" }, type: 1 },
+      { quickReplyButton: { displayText: "📖 Surah Audio", id: `${prefix}surahaudio` } },
+      { quickReplyButton: { displayText: "📜 Surah Urdu", id: `${prefix}surahurdu` } },
+      { quickReplyButton: { displayText: "🕌 Asmaul Husna", id: `${prefix}asmaulhusna` } },
     ];
 
-    await m.React('✅');
-    await sendButtonMessage(islamicMenuMessage, buttons);
+    await m.react('✅');
+    await sendButtonMessage("Islamic Menu", islamicMenuMessage, buttons);
   }
 
   // Command: mainmenu
   if (cmd === "mainmenu") {
-    await m.React('🦖');
+    await m.react('🦖');
     const mainMenuMessage = `
 ╭───❍「 *Main Menu* 」
 │ 🧑‍💻 *User:* ${pushName} ${pushwish}
 │ 🌐 *Mode:* ${mode}
 │ ⏰ *Time:* ${realTime}
 │ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-`;
+╰───────────❍`;
 
     const buttons = [
-      { buttonId: `${prefix}ping`, buttonText: { displayText: "🏓 Ping" }, type: 1 },
-      { buttonId: `${prefix}alive`, buttonText: { displayText: "✅ Alive" }, type: 1 },
-      { buttonId: `${prefix}owner`, buttonText: { displayText: "👤 Owner" }, type: 1 },
+      { quickReplyButton: { displayText: "🏓 Ping", id: `${prefix}ping` } },
+      { quickReplyButton: { displayText: "✅ Alive", id: `${prefix}alive` } },
+      { quickReplyButton: { displayText: "👤 Owner", id: `${prefix}owner` } },
     ];
 
-    await m.React('✅');
-    await sendButtonMessage(mainMenuMessage, buttons);
+    await m.react('✅');
+    await sendButtonMessage("Main Menu", mainMenuMessage, buttons);
   }
 
   // Command: downloadmenu
   if (cmd === "downloadmenu") {
-    await m.React('📥');
+    await m.react('📥');
     const downloadMenuMessage = `
 ╭───❍「 *Download Menu* 」
 │ 🧑‍💻 *User:* ${pushName} ${pushwish}
 │ 🌐 *Mode:* ${mode}
 │ ⏰ *Time:* ${realTime}
 │ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍
-`;
+╰───────────❍`;
 
     const buttons = [
-      { buttonId: `${prefix}apk`, buttonText: { displayText: "📦 APK" }, type: 1 },
-      { buttonId: `${prefix}facebook`, buttonText: { displayText: "📹 Facebook Video" }, type: 1 },
-      { buttonId: `${prefix}ytmp3`, buttonText: { displayText: "🎵 YouTube MP3" }, type: 1 },
+      { quickReplyButton: { displayText: "📦 APK", id: `${prefix}apk` } },
+      { quickReplyButton: { displayText: "📹 Facebook Video", id: `${prefix}facebook` } },
+      { quickReplyButton: { displayText: "🎵 YouTube MP3", id: `${prefix}ytmp3` } },
     ];
 
-    await m.React('✅');
-    await sendButtonMessage(downloadMenuMessage, buttons);
+    await m.react('✅');
+    await sendButtonMessage("Download Menu", downloadMenuMessage, buttons);
   }
 };
 
