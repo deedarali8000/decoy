@@ -1,171 +1,145 @@
 import moment from 'moment-timezone';
-import fs from 'fs';
-import os from 'os';
-import pkg, { prepareWAMessageMedia } from '@whiskeysockets/baileys';
-
+import pkg from '@whiskeysockets/baileys';
 const { generateWAMessageFromContent, proto } = pkg;
 import config from '../../config.cjs';
+import os from 'os';
 
-// Function to format bytes into KB, MB, or GB
-function formatBytes(bytes) {
-  if (bytes >= 1024 ** 3) {
-    return (bytes / 1024 ** 3).toFixed(2) + ' GB';
-  } else if (bytes >= 1024 ** 2) {
-    return (bytes / 1024 ** 2).toFixed(2) + ' MB';
-  } else if (bytes >= 1024) {
-    return (bytes / 1024).toFixed(2) + ' KB';
-  } else {
-    return bytes + ' bytes';
-  }
-}
-
-// System Memory Details
-const totalMemory = formatBytes(os.totalmem());
-const freeMemory = formatBytes(os.freemem());
-
-// Bot Uptime
-const uptime = process.uptime();
-const days = Math.floor(uptime / (24 * 3600));
-const hours = Math.floor((uptime % (24 * 3600)) / 3600);
-const minutes = Math.floor((uptime % 3600) / 60);
-const seconds = Math.floor(uptime % 60);
-const uptimeMessage = `I have been running for *${days}d ${hours}h ${minutes}m ${seconds}s*`;
-
-// Time Greetings Based on User Timezone
-const timeNow = moment().tz("Asia/Colombo").format("HH:mm:ss");
-let greeting;
-
-if (moment(timeNow, "HH:mm:ss").isBefore("05:00:00")) {
-  greeting = "Good Morning 🌄";
-} else if (moment(timeNow, "HH:mm:ss").isBefore("11:00:00")) {
-  greeting = "Good Morning 🌄";
-} else if (moment(timeNow, "HH:mm:ss").isBefore("15:00:00")) {
-  greeting = "Good Afternoon 🌅";
-} else if (moment(timeNow, "HH:mm:ss").isBefore("19:00:00")) {
-  greeting = "Good Evening 🌃";
-} else {
-  greeting = "Good Night 🌌";
-}
-
-// Main Bot Function
-const botHandler = async (m, Matrix) => {
-  let selectedListId;
-  const selectedButtonId = m?.message?.templateButtonReplyMessage?.selectedId;
-  const interactiveResponseMessage = m?.message?.interactiveResponseMessage;
-  
-  if (interactiveResponseMessage) {
-    const paramsJson = interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson;
-    if (paramsJson) {
-      const params = JSON.parse(paramsJson);
-      selectedListId = params.id;
-    }
-  }
-  
-  const selectedId = selectedListId || selectedButtonId;
+const allMenu = async (m, sock) => {
   const prefix = config.PREFIX;
-  const cmd = m.body.startsWith(prefix) ? m.body.slice(prefix.length).split(' ')[0].toLowerCase() : '';
-  const mode = config.MODE === 'public' ? 'public' : 'private';
-  const pref = config.PREFIX;
-  
-  const validCommands = ['list', 'help', 'menu1'];
-  if (validCommands.includes(cmd)) {
-    let msg = generateWAMessageFromContent(m.from, {
-      viewOnceMessage: {
-        message: {
-          messageContextInfo: {
-            deviceListMetadata: {},
-            deviceListMetadataVersion: 2
-          },
-          interactiveMessage: proto.Message.InteractiveMessage.create({
-            body: proto.Message.InteractiveMessage.Body.create({
-              text: `╭─────────────━┈⊷
-│🤖 Bot Name: *BERA TECH*
-│📍 Version: 2.1.0
-│👨‍💻 Owner: *BERA TECH TEAM*      
-│📡 Platform: *${os.platform()}*
-│🛡 Mode: *${mode}*
-│💫 Prefix: [${pref}]
-│🔋 RAM Usage: *${freeMemory} / ${totalMemory}*
-│🕰 Uptime: *${days}d ${hours}h ${minutes}m ${seconds}s*
-╰─────────────━┈⊷`
-            }),
-            footer: proto.Message.InteractiveMessage.Footer.create({
-              text: "© Powered by BERA TECH"
-            }),
-            header: proto.Message.InteractiveMessage.Header.create({
-              ...(await prepareWAMessageMedia(
-                { image: fs.readFileSync('./src/bera.jpg') },
-                { upload: Matrix.waUploadToServer }
-              )),
-              title: ``,
-              gifPlayback: true,
-              subtitle: "",
-              hasMediaAttachment: false  
-            }),
-            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-              buttons: [
-                {
-                  "name": "quick_reply",
-                  "buttonParamsJson": JSON.stringify({
-                    display_text: "ALIVE",
-                    id: `${prefix}alive`
-                  })
-                },
-                {
-                  "name": "quick_reply",
-                  "buttonParamsJson": JSON.stringify({
-                    display_text: "PING",
-                    id: `${prefix}ping`
-                  })
-                }
-              ],
-            }),
-            contextInfo: {
-              quotedMessage: m.message,
-              mentionedJid: [m.sender], 
-              forwardingScore: 999,
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: {
-                newsletterJid: '120363249960769123@newsletter',
-                newsletterName: "BERA TECH",
-                serverMessageId: 143
-              }
-            }
-          }),
-        },
-      },
-    }, {});
+  const mode = config.MODE;
+  const pushName = m.pushName || 'User';
 
-    await Matrix.relayMessage(msg.key.remoteJid, msg.message, {
-      messageId: msg.key.id
-    });
+  const cmd = m.body.startsWith(prefix)
+    ? m.body.slice(prefix.length).split(' ')[0].toLowerCase()
+    : '';
+
+  // Calculate uptime
+  const uptimeSeconds = process.uptime();
+  const days = Math.floor(uptimeSeconds / (24 * 3600));
+  const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = Math.floor(uptimeSeconds % 60);
+
+  // Realtime function
+  const realTime = moment().tz("Africa/Dar_es_Salaam").format("HH:mm:ss");
+
+  // Push wish function
+  let pushwish = "";
+  if (realTime < "05:00:00") {
+    pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
+  } else if (realTime < "11:00:00") {
+    pushwish = `𝙶𝙾𝙾𝙳 𝙼𝙾𝚁𝙽𝙸𝙽𝙶 🌄`;
+  } else if (realTime < "15:00:00") {
+    pushwish = `𝙶𝙾𝙾𝙳 𝙰𝙵𝚃𝙴𝚁𝙽𝙾𝙾𝙽 🌅`;
+  } else if (realTime < "19:00:00") {
+    pushwish = `𝙶𝙾𝙾𝙳 𝙴𝚅𝙴𝙽𝙸𝙽𝙶 🌃`;
+  } else {
+    pushwish = `𝙶𝙾𝙾𝙳 𝙽𝙸𝙶𝙷𝚃 🌌`;
   }
 
-  if (selectedId == "View All Menu") {
-    const menuMessage = `Hey ${m.pushName}, ${greeting}
-╭─────────────━┈⊷
-│🤖 Bot Name: *BERA TECH*
-│📍 Version: 2.0.3
-│👨‍💻 Owner: *BERA TECH TEAM*      
-│💻 Platform: *${os.platform()}*
-│🛡 Mode: *${config.MODE}*
-│💫 Prefix: [${pref}]
-│🔋 RAM Usage: *${freeMemory} / ${totalMemory}*
-│🕰 Uptime: *${days}d ${hours}h ${minutes}m ${seconds}s*
-╰─────────────━┈⊷
+  const sendButtonMessage = async (messageContent, buttons) => {
+    const buttonMessage = {
+      text: messageContent,
+      footer: "Powered by Bera Tech 🚀",
+      buttons: buttons,
+      headerType: 1,
+    };
 
-*🛠 Available Commands:*
-1️⃣ ${prefix}help - Show all commands
-2️⃣ ${prefix}ping - Check bot speed
-3️⃣ ${prefix}alive - Check bot status
-4️⃣ ${prefix}owner - Contact owner
-5️⃣ ${prefix}menu - Show menu list
+    await sock.sendMessage(m.from, buttonMessage, { quoted: m });
+  };
 
-📌 *Use '${prefix}command' to run any command!*
-📢 Stay updated with *BERA TECH* 🚀`;
+  // Command: menu
+  if (cmd === "menu") {
+    await m.React('⏳');
+    const menuMessage = `
+╭━━━〔 *Bera Tech Bot* 〕━━━┈⊷
+┃★ Developer: *Bruce Bera*
+┃★ User: *${m.pushName}*
+┃★ Mode: *${mode}*
+┃★ Platform: *${os.platform()}*
+┃★ Prefix: [${prefix}]
+┃★ Version: *1.0.0*
+╰━━━━━━━━━━━━━━━┈⊷ 
 
-    await Matrix.sendMessage(m.from, { text: menuMessage }, { quoted: m });
+> *Hey ${m.pushName}, ${pushwish}*
+Here are the available commands:
+`;
+
+    const buttons = [
+      { buttonId: `${prefix}mainmenu`, buttonText: { displayText: "📌 Main Menu" }, type: 1 },
+      { buttonId: `${prefix}islamicmenu`, buttonText: { displayText: "☪ Islamic Menu" }, type: 1 },
+      { buttonId: `${prefix}downloadmenu`, buttonText: { displayText: "⬇ Download Menu" }, type: 1 },
+    ];
+
+    await m.React('✅');
+    await sendButtonMessage(menuMessage, buttons);
+  }
+
+  // Command: islamicmenu
+  if (cmd === "islamicmenu") {
+    await m.React('⏳');
+    const islamicMenuMessage = `
+╭───❍「 *Islamic Menu* 」
+│ 🧑‍💻 *User:* ${pushName} ${pushwish}
+│ 🌐 *Mode:* ${mode}
+│ ⏰ *Time:* ${realTime}
+│ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
+╰───────────❍
+`;
+
+    const buttons = [
+      { buttonId: `${prefix}surahaudio`, buttonText: { displayText: "📖 Surah Audio" }, type: 1 },
+      { buttonId: `${prefix}surahurdu`, buttonText: { displayText: "📜 Surah Urdu" }, type: 1 },
+      { buttonId: `${prefix}asmaulhusna`, buttonText: { displayText: "🕌 Asmaul Husna" }, type: 1 },
+    ];
+
+    await m.React('✅');
+    await sendButtonMessage(islamicMenuMessage, buttons);
+  }
+
+  // Command: mainmenu
+  if (cmd === "mainmenu") {
+    await m.React('🦖');
+    const mainMenuMessage = `
+╭───❍「 *Main Menu* 」
+│ 🧑‍💻 *User:* ${pushName} ${pushwish}
+│ 🌐 *Mode:* ${mode}
+│ ⏰ *Time:* ${realTime}
+│ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
+╰───────────❍
+`;
+
+    const buttons = [
+      { buttonId: `${prefix}ping`, buttonText: { displayText: "🏓 Ping" }, type: 1 },
+      { buttonId: `${prefix}alive`, buttonText: { displayText: "✅ Alive" }, type: 1 },
+      { buttonId: `${prefix}owner`, buttonText: { displayText: "👤 Owner" }, type: 1 },
+    ];
+
+    await m.React('✅');
+    await sendButtonMessage(mainMenuMessage, buttons);
+  }
+
+  // Command: downloadmenu
+  if (cmd === "downloadmenu") {
+    await m.React('📥');
+    const downloadMenuMessage = `
+╭───❍「 *Download Menu* 」
+│ 🧑‍💻 *User:* ${pushName} ${pushwish}
+│ 🌐 *Mode:* ${mode}
+│ ⏰ *Time:* ${realTime}
+│ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
+╰───────────❍
+`;
+
+    const buttons = [
+      { buttonId: `${prefix}apk`, buttonText: { displayText: "📦 APK" }, type: 1 },
+      { buttonId: `${prefix}facebook`, buttonText: { displayText: "📹 Facebook Video" }, type: 1 },
+      { buttonId: `${prefix}ytmp3`, buttonText: { displayText: "🎵 YouTube MP3" }, type: 1 },
+    ];
+
+    await m.React('✅');
+    await sendButtonMessage(downloadMenuMessage, buttons);
   }
 };
 
-export default botHandler;
+export default allMenu;
