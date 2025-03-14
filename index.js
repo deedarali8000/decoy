@@ -97,6 +97,22 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 console.log(chalk.green("bera tech Connected"));
+ // Send welcome message
+                  // Send welcome message
+                    Matrix.sendMessage(Matrix.user.id, { 
+                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
+                        caption: `╭─────────────━┈⊷
+│ *BERA TECH BOT*
+╰─────────────━┈⊷
+
+╭─────────────━┈⊷
+│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
+│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
+╰─────────────━┈⊷
+
+> *Regards Bruce Bera*`
+                    });
+   
 
                 if (initialConnection) {
                     const userJid = Matrix.user.id; // Bot owner's JID
