@@ -1,128 +1,77 @@
 import moment from 'moment-timezone';
 import pkg from '@whiskeysockets/baileys';
-const { generateWAMessageFromContent, proto } = pkg;
+const { proto } = pkg;
 import config from '../../config.cjs';
 import os from 'os';
 
-const allMenu = async (m, sock) => {
-    const prefix = config.PREFIX;
-    const mode = config.MODE;
-    const pushName = m.pushName || 'User';
+const donateMenu = async (m, sock) => {
+  const prefix = config.PREFIX;
+  const mode = config.MODE;
+  const pushName = m.pushName || 'User';
 
-    // Uptime Calculation
-    const uptimeSeconds = process.uptime();
-    const days = Math.floor(uptimeSeconds / (24 * 3600));
-    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = Math.floor(uptimeSeconds % 60);
+  // Only run if the command is triggered by "donatemenu"
+  if (!m.body.startsWith(`${prefix}donatemenu`)) return;
 
-    // Time & Greetings
-    const realTime = moment().tz("Africa/Dar_es_Salaam").format("HH:mm:ss");
-    let pushwish = realTime < "05:00:00" ? "Good Morning 🌄" :
-                   realTime < "11:00:00" ? "Good Morning 🌄" :
-                   realTime < "15:00:00" ? "Good Afternoon 🌅" :
-                   realTime < "19:00:00" ? "Good Evening 🌃" : "Good Night 🌌";
+  // Uptime calculation
+  const uptimeSeconds = process.uptime();
+  const days = Math.floor(uptimeSeconds / (24 * 3600));
+  const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = Math.floor(uptimeSeconds % 60);
 
-    // Function to Send Button Message
-    const sendButtonMessage = async (message, buttons) => {
-        const buttonMessage = {
-            text: message,
-            footer: "Powered by Bera Tech 🚀",
-            buttons: buttons,
-            headerType: 1
-        };
+  // Current time in a specific timezone
+  const realTime = moment().tz("Africa/Dar_es_Salaam").format("HH:mm:ss");
 
-        await sock.sendMessage(m.from, buttonMessage, { quoted: m });
-    };
+  // Greeting based on time
+  let pushwish = "";
+  if (realTime < "05:00:00") {
+    pushwish = "Good Morning 🌄";
+  } else if (realTime < "11:00:00") {
+    pushwish = "Good Morning 🌄";
+  } else if (realTime < "15:00:00") {
+    pushwish = "Good Afternoon 🌅";
+  } else if (realTime < "19:00:00") {
+    pushwish = "Good Evening 🌃";
+  } else {
+    pushwish = "Good Night 🌌";
+  }
 
-    // Command: menu
-    if (m.body.startsWith(`${prefix}menu`)) {
-        await m.react('⏳');
-        const menuMessage = `
-╭━━━〔 *Bera Tech Bot* 〕━━━⊷
-┃★ Developer: *Bruce Bera*
-┃★ User: *${pushName}*
-┃★ Mode: *${mode}*
-┃★ Platform: *${os.platform()}*
-┃★ Prefix: [${prefix}]
-┃★ Version: *1.0.0*
-╰━━━━━━━━━━━━━━━⊷
-
-Hey *${pushName}*, ${pushwish}
-Here are the available menus:`;
-
-        const buttons = [
-            { buttonId: `${prefix}mainmenu`, buttonText: { displayText: "📌 Main Menu" }, type: 1 },
-            { buttonId: `${prefix}islamicmenu`, buttonText: { displayText: "☪ Islamic Menu" }, type: 1 },
-            { buttonId: `${prefix}downloadmenu`, buttonText: { displayText: "⬇ Download Menu" }, type: 1 },
-        ];
-
-        await m.react('✅');
-        await sendButtonMessage(menuMessage, buttons);
-    }
-
-    // Command: mainmenu
-    if (m.body.startsWith(`${prefix}mainmenu`)) {
-        await m.react('🦖');
-        const mainMenuMessage = `
-╭───❍「 *Main Menu* 」
+  // Construct the donation menu text
+  const donateMessage = `
+╭───❍「 *Donate Menu* 」
 │ 🧑‍💻 *User:* ${pushName} ${pushwish}
 │ 🌐 *Mode:* ${mode}
 │ ⏰ *Time:* ${realTime}
 │ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍`;
+╰───────────❍
 
-        const buttons = [
-            { buttonId: `${prefix}ping`, buttonText: { displayText: "🏓 Ping" }, type: 1 },
-            { buttonId: `${prefix}alive`, buttonText: { displayText: "✅ Alive" }, type: 1 },
-            { buttonId: `${prefix}owner`, buttonText: { displayText: "👤 Owner" }, type: 1 },
-        ];
+Thank you for considering a donation!
+You can support us via:
+• **PayPal:** paypal.me/YourLink
+• **Bitcoin:** 1A2b3C4d5E6f
+• **Other Methods:** Contact Owner for details.
+`;
 
-        await m.react('✅');
-        await sendButtonMessage(mainMenuMessage, buttons);
-    }
+  // Define hydrated quick reply buttons for donation options
+  const buttons = [
+    { quickReplyButton: { displayText: "💵 PayPal", id: `${prefix}donate_paypal` } },
+    { quickReplyButton: { displayText: "₿ Bitcoin", id: `${prefix}donate_bitcoin` } },
+    { quickReplyButton: { displayText: "📞 Contact", id: `${prefix}donate_contact` } },
+  ];
 
-    // Command: islamicmenu
-    if (m.body.startsWith(`${prefix}islamicmenu`)) {
-        await m.react('⏳');
-        const islamicMenuMessage = `
-╭───❍「 *Islamic Menu* 」
-│ 🧑‍💻 *User:* ${pushName} ${pushwish}
-│ 🌐 *Mode:* ${mode}
-│ ⏰ *Time:* ${realTime}
-│ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍`;
+  // Build the hydrated template message
+  const message = {
+    templateMessage: {
+      hydratedTemplate: {
+        hydratedContentText: donateMessage,
+        hydratedFooterText: "Powered by Bera Tech 🚀",
+        hydratedButtons: buttons,
+      },
+    },
+  };
 
-        const buttons = [
-            { buttonId: `${prefix}surahaudio`, buttonText: { displayText: "📖 Surah Audio" }, type: 1 },
-            { buttonId: `${prefix}surahurdu`, buttonText: { displayText: "📜 Surah Urdu" }, type: 1 },
-            { buttonId: `${prefix}asmaulhusna`, buttonText: { displayText: "🕌 Asmaul Husna" }, type: 1 },
-        ];
-
-        await m.react('✅');
-        await sendButtonMessage(islamicMenuMessage, buttons);
-    }
-
-    // Command: downloadmenu
-    if (m.body.startsWith(`${prefix}downloadmenu`)) {
-        await m.react('📥');
-        const downloadMenuMessage = `
-╭───❍「 *Download Menu* 」
-│ 🧑‍💻 *User:* ${pushName} ${pushwish}
-│ 🌐 *Mode:* ${mode}
-│ ⏰ *Time:* ${realTime}
-│ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
-╰───────────❍`;
-
-        const buttons = [
-            { buttonId: `${prefix}apk`, buttonText: { displayText: "📦 APK" }, type: 1 },
-            { buttonId: `${prefix}facebook`, buttonText: { displayText: "📹 Facebook Video" }, type: 1 },
-            { buttonId: `${prefix}ytmp3`, buttonText: { displayText: "🎵 YouTube MP3" }, type: 1 },
-        ];
-
-        await m.react('✅');
-        await sendButtonMessage(downloadMenuMessage, buttons);
-    }
+  // Send the message (quoted for context)
+  await sock.sendMessage(m.from, message, { quoted: m });
 };
 
-export default allMenu;
+export default donateMenu;
