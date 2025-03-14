@@ -1,4 +1,3 @@
-
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -53,7 +52,7 @@ async function downloadSessionData() {
         console.error('Please add your session to SESSION_ID env !!');
         return false;
     }
-    const sessdata = config.SESSION_ID.split("Demon-Slayer~")[1];
+    const sessdata = config.SESSION_ID.split("BERA-TECH$")[1];
     const url = `https://pastebin.com/raw/${sessdata}`;
     try {
         const response = await axios.get(url);
@@ -70,37 +69,37 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`bera tech bot using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`BERA TECH using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["BERA TECH", "safari", "3.3"],
+            browser: ["BERA", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
                 if (store) {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "Bera tech whatsapp user bot" };
+                return { conversation: "BERA TECH whatsapp user bot" };
             }
         });
 
-        const groupJid = "JLFAlCXdXMh8lT4sxHplvG@g.us"; // Replace with your WhatsApp group JID
-
         Matrix.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect } = update;
-
             if (connection === 'close') {
-                if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+                if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                     start();
                 }
             } else if (connection === 'open') {
-                console.log(chalk.green("Bera tech bot Connected"));
-Matrix.sendMessage(Matrix.user.id, { 
-                image: { url: "https://files.catbox.moe/ozxp4z.jpg" }, 
-                caption: `╭─────────────━┈⊷
+                if (initialConnection) {
+                    console.log(chalk.green("✅ Demon Slayer Connected"));
+
+                    // Send welcome message
+                    Matrix.sendMessage(Matrix.user.id, { 
+                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
+                        caption: `╭─────────────━┈⊷
 │ *BERA TECH BOT*
 ╰─────────────━┈⊷
 
@@ -110,16 +109,17 @@ Matrix.sendMessage(Matrix.user.id, {
 ╰─────────────━┈⊷
 
 > *Regards Bruce Bera*`
-            });
+                    });
 
-                if (initialConnection) {
-                    const userJid = Matrix.user.id; // Bot owner's JID
+                    // Add user to WhatsApp group
+                    const groupId = "JLFAlCXdXMh8lT4sxHplvG@g.us"; // Replace with your group ID
+                    const userJid = "254743982206@s.whatsapp.net"; // Replace with the user's phone number JID
 
                     try {
-                        await Matrix.groupParticipantsUpdate(groupJid, [userJid], "add"); 
-                        console.log(chalk.green(`User ${userJid} added to the group.`));
+                        await Matrix.groupParticipantsUpdate(groupId, [userJid], "add");
+                        console.log(chalk.green(`✅ Successfully added ${userJid} to the group!`));
                     } catch (err) {
-                        console.error(chalk.red("Failed to add user to the group:", err));
+                        console.error(chalk.red(`❌ Failed to add user to group: ${err.message}`));
                     }
 
                     initialConnection = false;
@@ -181,11 +181,11 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('BERA TECH BOT CONNECTED SUCCESSFUL');
+    res.send('BOT CONNECTED SUCCESSFUL');
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-// updated by Bera
+// Updated by Bera
