@@ -4,13 +4,13 @@ const { proto } = pkg;
 import config from '../../config.cjs';
 import os from 'os';
 
-const donateMenu = async (m, sock) => {
+const aboutCommand = async (m, sock) => {
   const prefix = config.PREFIX;
   const mode = config.MODE;
   const pushName = m.pushName || 'User';
 
-  // Only run if the command is triggered by "donatemenu"
-  if (!m.body.startsWith(`${prefix}donatemenu`)) return;
+  // Only trigger if the message starts with the about command
+  if (!m.body.startsWith(`${prefix}about`)) return;
 
   // Uptime calculation
   const uptimeSeconds = process.uptime();
@@ -19,59 +19,42 @@ const donateMenu = async (m, sock) => {
   const minutes = Math.floor((uptimeSeconds % 3600) / 60);
   const seconds = Math.floor(uptimeSeconds % 60);
 
-  // Current time in a specific timezone
+  // Get current time in the specified timezone
   const realTime = moment().tz("Africa/Dar_es_Salaam").format("HH:mm:ss");
 
-  // Greeting based on time
-  let pushwish = "";
+  // Simple greeting based on time
+  let greeting = "";
   if (realTime < "05:00:00") {
-    pushwish = "Good Morning 🌄";
+    greeting = "Good Morning 🌄";
   } else if (realTime < "11:00:00") {
-    pushwish = "Good Morning 🌄";
+    greeting = "Good Morning 🌄";
   } else if (realTime < "15:00:00") {
-    pushwish = "Good Afternoon 🌅";
+    greeting = "Good Afternoon 🌅";
   } else if (realTime < "19:00:00") {
-    pushwish = "Good Evening 🌃";
+    greeting = "Good Evening 🌃";
   } else {
-    pushwish = "Good Night 🌌";
+    greeting = "Good Night 🌌";
   }
 
-  // Construct the donation menu text
-  const donateMessage = `
-╭───❍「 *Donate Menu* 」
-│ 🧑‍💻 *User:* ${pushName} ${pushwish}
+  // Construct the about text message
+  const aboutText = `
+╭───❍「 *About Bot* 」
+│ 🧑‍💻 *User:* ${pushName} ${greeting}
 │ 🌐 *Mode:* ${mode}
 │ ⏰ *Time:* ${realTime}
 │ 🚀 *Uptime:* ${days}d ${hours}h ${minutes}m ${seconds}s
 ╰───────────❍
 
-Thank you for considering a donation!
-You can support us via:
-• **PayPal:** paypal.me/YourLink
-• **Bitcoin:** 1A2b3C4d5E6f
-• **Other Methods:** Contact Owner for details.
+*Bera Tech Bot* is a multipurpose WhatsApp bot powered by Baileys.
+Developer: Bruce Bera
+Version: 1.0.0
+
+This bot is designed to provide interactive features and commands.
+Thank you for using Bera Tech Bot!
 `;
 
-  // Define hydrated quick reply buttons for donation options
-  const buttons = [
-    { quickReplyButton: { displayText: "💵 PayPal", id: `${prefix}donate_paypal` } },
-    { quickReplyButton: { displayText: "₿ Bitcoin", id: `${prefix}donate_bitcoin` } },
-    { quickReplyButton: { displayText: "📞 Contact", id: `${prefix}donate_contact` } },
-  ];
-
-  // Build the hydrated template message
-  const message = {
-    templateMessage: {
-      hydratedTemplate: {
-        hydratedContentText: donateMessage,
-        hydratedFooterText: "Powered by Bera Tech 🚀",
-        hydratedButtons: buttons,
-      },
-    },
-  };
-
-  // Send the message (quoted for context)
-  await sock.sendMessage(m.from, message, { quoted: m });
+  // Send the plain text message
+  await sock.sendMessage(m.from, { text: aboutText }, { quoted: m });
 };
 
-export default donateMenu;
+export default aboutCommand;
