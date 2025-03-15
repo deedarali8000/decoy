@@ -69,13 +69,13 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`bera tech using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["demon", "safari", "3.3"],
+            browser: ["bera", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
                 if (store) {
@@ -86,19 +86,15 @@ async function start() {
             }
         });
 
-        const groupJid = "JLFAlCXdXMh8lT4sxHplvG@g.us"; // Replace with your WhatsApp group JID
-
-        Matrix.ev.on('connection.update', async (update) => {
+        Matrix.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect } = update;
-
             if (connection === 'close') {
-                if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+                if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                     start();
                 }
             } else if (connection === 'open') {
-                console.log(chalk.green("bera tech Connected"));
- // Send welcome message
-                  // Send welcome message
+                if (initialConnection) {
+                    console.log(chalk.green("Bera tech bot Connected"));
                     Matrix.sendMessage(Matrix.user.id, { 
                         image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
                         caption: `╭─────────────━┈⊷
@@ -112,18 +108,6 @@ async function start() {
 
 > *Regards Bruce Bera*`
                     });
-   
-
-                if (initialConnection) {
-                    const userJid = Matrix.user.id; // Bot owner's JID
-
-                    try {
-                        await Matrix.groupParticipantsUpdate(groupJid, [userJid], "add"); 
-                        console.log(chalk.green(`User ${userJid} added to the group.`));
-                    } catch (err) {
-                        console.error(chalk.red("Failed to add user to the group:", err));
-                    }
-
                     initialConnection = false;
                 } else {
                     console.log(chalk.blue("♻️ Connection reestablished after restart."));
@@ -146,17 +130,28 @@ async function start() {
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
+
+                // Automatically react to messages if enabled
                 if (!mek.key.fromMe && config.AUTO_REACT) {
-                    console.log(mek);
-                    if (mek.message) {
-                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        await doReact(randomEmoji, mek, Matrix);
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await doReact(randomEmoji, mek, Matrix);
+                }
+
+                // **STATUS VIEW FIX: Detect and View Status Automatically**
+                if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
+                    try {
+                        await Matrix.readMessages([mek.key]);
+                        console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
+                    } catch (error) {
+                        console.error('❌ Error marking status as viewed:', error);
                     }
                 }
+                
             } catch (err) {
-                console.error('Error during auto reaction:', err);
+                console.error('Error during auto reaction/status viewing:', err);
             }
         });
+
     } catch (error) {
         console.error('Critical Error:', error);
         process.exit(1);
@@ -183,11 +178,9 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('CONNNECTED SUCCESSFUL');
+    res.send('CONNECTED SUCCESSFULL');
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
-// updated by Bera
