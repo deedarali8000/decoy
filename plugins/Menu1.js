@@ -61,7 +61,7 @@ const allMenu = async (m, sock) => {
     );
   };
 
-  if (cmd === "menu1") {
+  if (cmd === "menu") {
     await sock.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
     const aliveMessage = `
