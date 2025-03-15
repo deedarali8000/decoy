@@ -15,7 +15,7 @@ const playCommand = async (m, sock) => {
       await sock.sendMessage(m.from, { text: "🔎 *Searching for your song...*" }, { quoted: m });
 
       // Search YouTube for the video
-      const searchUrl = `https://api.siputzx.my.id/api/d/ytmp3?url=${encodeURIComponent(query)}`;
+      const searchUrl = `https://ditzdevs-ytdl-api.hf.space/api/ytmp3?url=${encodeURIComponent(query)}`;
       const response = await fetch(searchUrl);
       const data = await response.json();
 
