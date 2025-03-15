@@ -35,7 +35,7 @@ const video = async (m, Matrix) => {
 
   try {
     // Call API to fetch video details
-    const apiUrl = `https://apis.davidcyriltech.my.id/youtube/mp3?url=${videoUrl}`;
+    const apiUrl = `https://api.siputzx.my.id/api/d/ytmp3?url=${videoUrl}`;
     const { data } = await axios.get(apiUrl);
 
     if (!data.success) {
