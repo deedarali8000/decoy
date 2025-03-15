@@ -1,82 +1,84 @@
-import { downloadMediaMessage } from '@whiskeysockets/baileys';
-import fs from 'fs';
-import config from '../config.cjs'; // Ensure this contains the owner's number
+import config from "../../config.cjs";
+import fs from "fs";
 
-const AntiDeleteCommand = async (m, Matrix) => {
-    // Command Handling for Anti-Delete Toggle
-    if (m.body?.toLowerCase() === '#antidelete on') {
-        config.ANTI_DELETE = true;
-        fs.writeFileSync('./config.cjs', `export default ${JSON.stringify(config, null, 2)};`);
-        return await Matrix.sendMessage(m.key.remoteJid, { text: '*ᴇɴᴀʙʟᴇᴅ.*' }, { quoted: m });
-    }
-    if (m.body?.toLowerCase() === '#antidelete off') {
-        config.ANTI_DELETE = false;
-        fs.writeFileSync('./config.cjs', `export default ${JSON.stringify(config, null, 2)};`);
-        return await Matrix.sendMessage(m.key.remoteJid, { text: '*ᴅɪsᴀʙʟᴇᴅ.*' }, { quoted: m });
-    }
+const settingsPath = "./data/antidelete.json";
 
-    // If Anti-Delete is Disabled, Stop Execution
-    if (!config.ANTI_DELETE) return;
+// Load or initialize settings
+let antiDeleteSettings = {};
+if (fs.existsSync(settingsPath)) {
+  antiDeleteSettings = JSON.parse(fs.readFileSync(settingsPath));
+}
 
-    if (!m.message?.protocolMessage) return;
-    
-    const { remoteJid: chat } = m.key;
-    const { protocolMessage } = m.message;
-    const { key: deletedMessageKey, type: protocolType } = protocolMessage;
-
-    if (protocolType !== 0) return;
-
-    try {
-        const msg = await Matrix.loadMessage(chat, deletedMessageKey);
-        if (!msg) return;
-
-        const senderName = msg.pushName || 'Unknown';
-        const timestamp = new Date().toLocaleString();
-        let text = `🔓 *ᴀɴᴛɪ-ᴅᴇʟᴇᴛᴇ ᴀʟᴇʀᴛ!*\n\n📩 *ᴄʜᴀᴛ:* ${chat}\n👤 *sᴇɴᴅᴇʀ:* ${senderName}\n🕒 *ᴛɪᴍᴇ:* ${timestamp}`;
-
-        const botNumber = Matrix.user.id.split(':')[0] + '@s.whatsapp.net'; // Bot's number
-
-        // Media Handling
-        const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'];
-        const messageType = Object.keys(msg.message || {})[0];
-
-        if (mediaTypes.includes(messageType)) {
-            const buffer = await downloadMediaMessage(msg, 'buffer').catch(() => null);
-            if (buffer) {
-                let mediaPayload;
-                const mediaOptions = { quoted: m, caption: text };
-
-                switch (messageType) {
-                    case 'imageMessage':
-                        mediaPayload = { image: buffer, ...mediaOptions };
-                        break;
-                    case 'videoMessage':
-                        mediaPayload = { video: buffer, mimetype: 'video/mp4', ...mediaOptions };
-                        break;
-                    case 'audioMessage':
-                        mediaPayload = { audio: buffer, mimetype: 'audio/ogg', ptt: true, ...mediaOptions };
-                        break;
-                    case 'stickerMessage':
-                        mediaPayload = { sticker: buffer };
-                        break;
-                    default:
-                        mediaPayload = { document: buffer, mimetype: msg.message[messageType]?.mimetype, ...mediaOptions };
-                }
-
-                await Matrix.sendMessage(botNumber, mediaPayload); // Forward media to bot's number
-                return;
-            }
-        }
-
-        // Text Message Handling
-        const textMessage = msg.message?.conversation || msg.message?.extendedTextMessage?.text;
-        if (textMessage) {
-            await Matrix.sendMessage(botNumber, { text: `${text}\n\n📝 *ᴍᴇssᴀɢᴇ:* ${textMessage}` }, { quoted: m });
-        }
-    } catch (error) {
-        console.error('AntiDelete Command Error:', error);
-    }
+// Save settings
+const saveSettings = () => {
+  fs.writeFileSync(settingsPath, JSON.stringify(antiDeleteSettings, null, 2));
 };
 
-export default AntiDeleteCommand;
-//JawadTechX The Top Developer 
+const antiDeleteCommand = async (m, sock) => {
+  const prefix = config.PREFIX;
+  const args = m.body.slice(prefix.length).trim().split(/ +/);
+  const cmd = args[0].toLowerCase();
+  const option = args[1]?.toLowerCase();
+  const chatId = m.from;
+
+  if (cmd === "antidelete") {
+    if (!m.isGroup) {
+      return await sock.sendMessage(chatId, { text: "❌ *This command only works in groups!*" }, { quoted: m });
+    }
+
+    // Check if the bot is an admin
+    const groupMetadata = await sock.groupMetadata(chatId);
+    const botNumber = sock.user.id.split(":")[0] + "@s.whatsapp.net";
+    const isBotAdmin = groupMetadata.participants.some(p => p.id === botNumber && p.admin);
+
+    if (!isBotAdmin) {
+      return await sock.sendMessage(chatId, { text: "❌ *I need to be an admin to enable anti-delete!*" }, { quoted: m });
+    }
+
+    if (option === "on") {
+      antiDeleteSettings[chatId] = true;
+      saveSettings();
+      return await sock.sendMessage(chatId, { text: "✅ *Anti-Delete is now activated! Deleted messages will be recovered.*" }, { quoted: m });
+    } else if (option === "off") {
+      delete antiDeleteSettings[chatId];
+      saveSettings();
+      return await sock.sendMessage(chatId, { text: "❌ *Anti-Delete has been deactivated!*" }, { quoted: m });
+    } else {
+      return await sock.sendMessage(chatId, { text: "⚠️ Use: `!antidelete on` or `!antidelete off`" }, { quoted: m });
+    }
+  }
+};
+
+const messageRevokeHandler = async (m, sock) => {
+  const chatId = m.key.remoteJid;
+
+  if (antiDeleteSettings[chatId] && m.key.fromMe === false && m.message) {
+    const sender = m.key.participant || m.key.remoteJid;
+    const messageType = Object.keys(m.message)[0];
+
+    let msgContent = "";
+    if (messageType === "conversation") {
+      msgContent = m.message.conversation;
+    } else if (messageType === "extendedTextMessage") {
+      msgContent = m.message.extendedTextMessage.text;
+    } else if (messageType === "imageMessage") {
+      msgContent = "*[Deleted Image]*";
+    } else if (messageType === "videoMessage") {
+      msgContent = "*[Deleted Video]*";
+    } else {
+      msgContent = "*[Deleted Message]*";
+    }
+
+    const recoveryMessage = `🚨 *Anti-Delete Alert!*
+🔹 *Sender:* @${sender.split("@")[0]}
+🔹 *Message:* ${msgContent}`;
+
+    await sock.sendMessage(chatId, { text: recoveryMessage, mentions: [sender] }, { quoted: m });
+
+    if (messageType === "imageMessage" || messageType === "videoMessage") {
+      await sock.sendMessage(chatId, { [messageType]: m.message[messageType] }, { quoted: m });
+    }
+  }
+};
+
+export { antiDeleteCommand, messageRevokeHandler };
