@@ -1,72 +1,85 @@
-import axios from "axios";
-import config from "../../config.cjs";
+import config from '../../config.cjs';
+import ytSearch from 'yt-search';
+import fetch from 'node-fetch';
+const DOWNLOAD_APIS = [
+    "https://apisnothing.vercel.app/api/download/ytmp3?url=",
+    "https://api.siputzx.my.id/api/d/ytmp3?url=",
+    "https://ditzdevs-ytdl-api.hf.space/api/ytmp3?url="
+];
 
-const playCommand = async (m, sock) => {
-  const prefix = config.PREFIX;
-  const args = m.body.slice(prefix.length).trim().split(/ +/);
-  const cmd = args[0].toLowerCase();
-  const query = args.slice(1).join(" ");
+const play = async (message, client) => {
+    const prefix = config.PREFIX;
+    const command = message.body.startsWith(prefix) ? message.body.slice(prefix.length).split(" ")[0].toLowerCase() : '';
+    const query = message.body.slice(prefix.length + command.length).trim();
 
-  if (cmd !== "play") return;
+    if (command === "play") {
+        if (!query) return message.reply("❌ *Please provide a search query!*");
+        
+        await message.reply("⏳ Searching...");
+        try {
+            const searchResults = await ytSearch(query);
+            if (!searchResults.videos.length) return message.reply("❌ *No results found!*");
 
-  if (!query) {
-    return await sock.sendMessage(m.from, { text: "⚠️ *Please provide a song name or YouTube link!*" }, { quoted: m });
-  }
+            const video = searchResults.videos[0];
+            const caption = `🎵 *Title:* ${video.title}\n📺 *Channel:* ${video.author.name}\n👁️ *Views:* ${video.views}\n⏳ *Duration:* ${video.timestamp}\n\n📥 *Choose a format to download:*\n1️⃣ Video\n2️⃣ Audio`;
 
-  try {
-    // Search YouTube for the video URL
-    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    const searchResponse = await axios.get(searchUrl);
-    const videoIdMatch = searchResponse.data.match(/"videoId":"(.*?)"/);
+            const response = await client.sendMessage(message.chat, { image: { url: video.thumbnail }, caption }, { quoted: message });
+            const messageId = response.key.id;
+            const videoUrl = video.url;
 
-    if (!videoIdMatch) {
-      return await sock.sendMessage(m.from, { text: "❌ *No results found!*" }, { quoted: m });
+            client.ev.on("messages.upsert", async (msg) => {
+                const newMsg = msg.messages[0];
+                if (!newMsg.message) return;
+
+                const userResponse = newMsg.message.conversation || newMsg.message.extendedTextMessage?.text;
+                const isReplyToBot = newMsg.message.contextInfo?.stanzaId === messageId;
+
+                if (isReplyToBot) {
+                    let apiUrl = null;
+                    let fileType = "audio";
+                    let mimetype = "audio/mpeg";
+
+                    if (userResponse === "1") {
+                        apiUrl = `https://apis.davidcyriltech.my.id/download/ytmp4?url=${videoUrl}`;
+                        fileType = "video";
+                        mimetype = "video/mp4";
+                    } else if (userResponse === "2") {
+                        apiUrl = await getAvailableMp3Url(videoUrl);
+                    } else {
+                        return message.reply("❌ *Invalid selection! Please reply with 1 or 2.*");
+                    }
+
+                    if (!apiUrl) return message.reply("❌ *All MP3 download APIs failed!*");
+
+                    const downloadResponse = await fetch(apiUrl);
+                    const downloadData = await downloadResponse.json();
+                    if (!downloadData.success) return message.reply("❌ *Download failed, please try again.*");
+
+                    const downloadUrl = downloadData.result.download_url;
+                    await client.sendMessage(message.chat, { [fileType]: { url: downloadUrl }, mimetype }, { quoted: newMsg });
+                }
+            });
+
+        } catch (error) {
+            console.error("Error:", error);
+            return message.reply("❌ *An error occurred while processing your request.*");
+        }
     }
-
-    const videoId = videoIdMatch[1];
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-    await sock.sendMessage(m.from, { text: "🔍 *Searching for the best audio source...*" }, { quoted: m });
-
-    // Try first API
-    let audioData;
-    try {
-      const response1 = await axios.get(`https://ditzdevs-ytdl-api.hf.space/api/ytmp3?url=${videoUrl}`);
-      if (response1.data && response1.data.url) {
-        audioData = response1.data;
-      }
-    } catch (error) {
-      console.log("API 1 failed, switching to backup.");
-    }
-
-    // Try second API if the first one fails
-    if (!audioData) {
-      const response2 = await axios.get(`https://api.siputzx.my.id/api/d/ytmp3?url=${videoUrl}`);
-      if (response2.data && response2.data.url) {
-        audioData = response2.data;
-      }
-    }
-
-    if (!audioData) {
-      return await sock.sendMessage(m.from, { text: "❌ *Failed to fetch audio. Try another song!*" }, { quoted: m });
-    }
-
-    // Send the audio file
-    const audioMessage = {
-      audio: { url: audioData.url },
-      mimetype: "audio/mp4",
-      ptt: false,
-      fileName: `${audioData.title}.mp3`,
-      caption: `🎵 *BERA TECH DOWNLOADER*\n\n🔹 *Title:* ${audioData.title}\n🔹 *Duration:* ${audioData.duration}\n🔹 *Size:* ${audioData.filesize}\n\n🎧 *Enjoy your music!*`,
-      footer: "Regards, Bruce Bera"
-    };
-
-    await sock.sendMessage(m.from, audioMessage, { quoted: m });
-
-  } catch (error) {
-    console.error("Error in play command:", error);
-    await sock.sendMessage(m.from, { text: "❌ *An error occurred while downloading the audio.*" }, { quoted: m });
-  }
 };
 
-export default playCommand;
+// Function to try multiple MP3 APIs until one works
+const getAvailableMp3Url = async (videoUrl) => {
+    for (const api of DOWNLOAD_APIS) {
+        const testUrl = `${api}${videoUrl}`;
+        try {
+            const response = await fetch(testUrl);
+            const data = await response.json();
+            if (data.success) return testUrl;
+        } catch (error) {
+            console.warn(`API failed: ${api}`);
+        }
+    }
+    return null;
+};
+
+export default play;
