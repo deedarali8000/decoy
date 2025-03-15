@@ -1,4 +1,9 @@
-import { antiDeleteCommand, messageRevokeHandler } from "./commands/antidelete.js";
+
+
+
+
+
+import { antiDeleteCommand, messageRevokeHandler } from "./plugins/antidelete.js";
 
 Matrix.ev.on("messages.upsert", async chatUpdate => {
     await antiDeleteCommand(chatUpdate.messages[0], Matrix);
