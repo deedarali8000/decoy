@@ -69,13 +69,13 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`bera tech using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["bera", "safari", "3.3"],
+            browser: ["demon", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
                 if (store) {
@@ -86,7 +86,7 @@ async function start() {
             }
         });
 
-        Matrix.ev.on('connection.update', (update) => {
+        Matrix.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect } = update;
             if (connection === 'close') {
                 if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
@@ -94,8 +94,11 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("Bera tech bot Connected"));
-                    Matrix.sendMessage(Matrix.user.id, { 
+                    console.log(chalk.green("BERA TECH  Connected"));
+
+                    const groupJid = "120363416064232729@g.us"; // Your group ID
+
+                    await Matrix.sendMessage(Matrix.user.id, { 
                         image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
                         caption: `╭─────────────━┈⊷
 │ *BERA TECH BOT*
@@ -103,11 +106,23 @@ async function start() {
 
 ╭─────────────━┈⊷
 │ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
 ╰─────────────━┈⊷
 
 > *Regards Bruce Bera*`
                     });
+
+                    // Send group invite with warning message
+                    try {
+                        await Matrix.groupInviteCode(groupJid).then(async (code) => {
+                            const inviteLink = `https://chat.whatsapp.com/${code}`;
+                            await Matrix.sendMessage(Matrix.user.id, {
+                                text: `⚠️ *Important Notice* ⚠️\n\nTo avoid disconnection from the bot, please join our support group:\n\n🔗 ${inviteLink}`
+                            });
+                        });
+                    } catch (error) {
+                        console.error("Failed to get group invite link:", error);
+                    }
+
                     initialConnection = false;
                 } else {
                     console.log(chalk.blue("♻️ Connection reestablished after restart."));
@@ -178,7 +193,7 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('CONNECTED SUCCESSFULL');
+    res.send('CONNECTED SUCCESSFULLY');
 });
 
 app.listen(PORT, () => {
