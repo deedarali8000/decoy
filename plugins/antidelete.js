@@ -1,7 +1,7 @@
 import config from "../../config.cjs";
 import fs from "fs";
 
-const settingsPath = "./data/antidelete.json";
+const settingsPath = "./data/antidel.js";
 
 // Load or initialize settings
 let antiDeleteSettings = {};
