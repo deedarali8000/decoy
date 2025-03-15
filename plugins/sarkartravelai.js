@@ -78,11 +78,11 @@ const mistral = async (message, botInstance) => {
   const command = text.slice(prefix.length).split(" ")[0].toLowerCase();
   const query = text.slice(prefix.length + command.length).trim();
 
-  const validCommands = ['travel', 'visit', 'travel-assistant'];
+  const validCommands = ['ai2', 'visit', 'travel-assistant'];
   if (!validCommands.includes(command)) return; // Ignore invalid commands
 
   if (!query) {
-    await botInstance.sendMessage(message.from, { text: "✈️ *Example:* ${prefix}+{validcommands} how can I visit the Taj Mahal 🏰" }, { quoted: message });
+    await botInstance.sendMessage(message.from, { text: "✈️ *Example:* ${prefix}+{validcommands} how can I visit the Nairobi " }, { quoted: message });
     return;
   }
 
