@@ -1,7 +1,7 @@
 import config from "../../config.cjs";
 import fetch from "node-fetch";
 
-const GPT_API = "https://api.dreaded.site/api/chatgpt?text=";
+const GPT_API = "https://itzpire.com/ai/copilot2trip?q=";
 
 const gptCode = async (message, client) => {
     const prefix = config.PREFIX;
@@ -9,7 +9,7 @@ const gptCode = async (message, client) => {
     const command = args[0].toLowerCase();
     const query = args.slice(1).join(" ");
 
-    if (command !== "gptcode") return;
+    if (command !== "gpt1") return;
 
     if (!query) return message.reply("❌ *Please provide a coding request!*\nExample: `!gptcode HTML form`");
 
