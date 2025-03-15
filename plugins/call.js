@@ -3,7 +3,7 @@ module.exports = {
     ownerNumber: "254743982206@s.whatsapp.net", // Your WhatsApp number
 };
 const { default: makeWASocket, useMultiFileAuthState } = require("@whiskeysockets/baileys");
-const { prefix } = require("./config.cjs");
+const config = require(".../config.cjs"); // Correct import
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState("auth_info");
@@ -21,27 +21,18 @@ async function startBot() {
         const sender = msg.key.remoteJid;
         const messageContent = msg.message.conversation || msg.message.extendedTextMessage?.text;
 
-        if (!messageContent.startsWith(prefix)) return;
+        if (!messageContent.startsWith(config.prefix)) return;
 
-        const args = messageContent.slice(prefix.length).trim().split(/\s+/);
+        const args = messageContent.slice(config.prefix.length).trim().split(/\s+/);
         const command = args.shift().toLowerCase();
 
         if (command === "call") {
-            if (args.length === 0) {
-                await sock.sendMessage(sender, { text: "Please provide a phone number to call!" });
-                return;
-            }
-
-            const phoneNumber = args[0].replace(/[^0-9]/g, "") + "@s.whatsapp.net"; // Sanitize input
-
-            try {
-                await sock.sendCall(phoneNumber);
-                await sock.sendMessage(sender, { text: `Calling ${args[0]}...` });
-            } catch (error) {
-                console.error("Call failed:", error);
-                await sock.sendMessage(sender, { text: "Failed to make the call." });
-            }
+            await sock.sendMessage(sender, { text: "WhatsApp Web does not support calls via API." });
         }
+    });
+
+    sock.ev.on("connection.update", (update) => {
+        if (update.qr) console.log("Scan this QR Code:", update.qr);
     });
 }
 
