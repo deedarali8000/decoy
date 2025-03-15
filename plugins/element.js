@@ -38,7 +38,7 @@ const elementListCommand = async (m, Matrix) => {
 
     // Prepare the image URL
     const image = {
-      url: "https://files.catbox.moe/yldsxj.jpg"
+      url: "https://files.catbox.moe/ozxp4z.jpg"
     };
 
     // Prepare the message object
