@@ -1,5 +1,5 @@
 module.exports = {
-    defaultProfilePicture: "https://telegra.ph/file/95680cd03e012bb08b9e6.jpg",
+    defaultProfilePicture: "https://files.catbox.moe/ozxp4z.jpg",
     prefix: "." // Change this to your desired prefix
 };
 const config = require("./config.cjs");
@@ -12,7 +12,7 @@ module.exports = async (context) => {
 
     const command = m.text.slice(config.prefix.length).trim().split(" ")[0];
 
-    if (command === "profile") {
+    if (command === "profile1") {
         const target = m.quoted ? m.quoted.sender : m.sender;
         const name = m.quoted ? "@" + target.split("@")[0] : m.pushName;
 
