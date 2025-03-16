@@ -19,8 +19,8 @@ import moment from 'moment-timezone';
 import axios from 'axios';
 import config from './config.cjs';
 import pkg from './lib/autoreact.cjs';
-const { emojis, doReact } = pkg;
 
+const { emojis, doReact } = pkg;
 const sessionName = "session";
 const app = express();
 const orange = chalk.bold.hex("#FFA500");
@@ -29,14 +29,11 @@ let useQR = false;
 let initialConnection = true;
 const PORT = process.env.PORT || 3000;
 
-const MAIN_LOGGER = pino({
-    timestamp: () => `,"time":"${new Date().toJSON()}"`
-});
+const MAIN_LOGGER = pino({ timestamp: () => `,"time":"${new Date().toJSON()}"` });
 const logger = MAIN_LOGGER.child({});
 logger.level = "trace";
 
 const msgRetryCounterCache = new NodeCache();
-
 const __filename = new URL(import.meta.url).pathname;
 const __dirname = path.dirname(__filename);
 
@@ -61,6 +58,7 @@ async function downloadSessionData() {
         console.log("🔒 Session Successfully Loaded !!");
         return true;
     } catch (error) {
+        console.error('❌ Error downloading session data:', error);
         return false;
     }
 }
@@ -100,123 +98,33 @@ async function start() {
                         caption: `╭─────────────━┈⊷
 │ *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ*
 ╰─────────────━┈⊷
-
-╭─────────────━┈⊷
-│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ ⚠️ Join our support group to avoid disconnection:
+│ ⚠️ Join our support group:
 │🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
-│
-╰─────────────━┈⊷
-
-> *ʀᴇɢᴀʀᴅs ʙᴇʀᴀ ᴛᴇᴄʜ*`
+╰─────────────━┈⊷`
                     });
                     initialConnection = false;
                 } else {
-                    console.log(chalk.blue("♻️ Connection reestablished after restart."));
+                    console.log(chalk.blue("♻️ Connection reestablished."));
                 }
             }
         });
-        Matrix.ev.on("group-participants.update", async (update) => {
-    try {
-        const { id, participants, action } = update;
-
-        if (config.ANTI_LEFT && action === "remove") {
-            for (const user of participants) {
-                const metadata = await Matrix.groupMetadata(id);
-                const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
-                
-                // Check if the user was kicked by an admin
-                if (!admins.includes(user)) {
-                    try {
-                        await Matrix.groupParticipantsUpdate(id, [user], "add");
-                        console.log(`Re-added ${user} to the group!`);
-                        await Matrix.sendMessage(id, { text: `*${user.split('@')[0]} left the group and was re-added!*` });
-                    } catch (error) {
-                        console.error(`❌ Failed to re-add ${user}:`, error);
-                    }
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Antileft Error:", err);
-    }
-});
-        }
-
-        // Auto View & React to Status (for broadcast messages)
-        if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
-          try {
-            await Matrix.readMessages([mek.key]);
-            console.log(chalk.green(`Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
-            if (config.AUTO_REACT) {
-              const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-              await doReact(randomEmoji, mek, Matrix);
-              console.log(`Reacted to status with ${randomEmoji}`);
-            }
-          } catch (error) {
-            console.error('❌ Error marking status as viewed:', error);
-          }
-        }
-      } catch (err) {
-        console.error('Error during auto reaction/status viewing:', err);
-      }
-    });
-
-    // Anti-Delete: Send deleted message details to the user's DM
-    if (config.ANTI_DELETE) {
-      Matrix.ev.on("messages.update", async (updates) => {
-        try {
-          for (const update of updates) {
-            if (update.update.message && !update.update.key.fromMe) {
-              const deletedMessage = update.update.message;
-              const senderJid = update.update.key.participant || update.update.key.remoteJid;
-              if (!deletedMessage) continue;
-
-              let messageContent = "🔹 *A message was deleted!*";
-              const messageType = Object.keys(deletedMessage)[0];
-              if (messageType === "conversation") {
-                messageContent += `\n\n💬 *Message:* ${deletedMessage.conversation}`;
-              } else if (messageType === "extendedTextMessage") {
-                messageContent += `\n\n💬 *Message:* ${deletedMessage.extendedTextMessage.text}`;
-              } else if (messageType === "imageMessage") {
-                messageContent += "\n\n🖼 *An image was deleted!*";
-              } else if (messageType === "videoMessage") {
-                messageContent += "\n\n*A video was deleted!*";
-              }
-              // Send the deleted message details to the user's DM
-              await Matrix.sendMessage(senderJid, { text: messageContent });
-              console.log(`Sent deleted message details to ${senderJid}`);
-            }
-          }
-        } catch (err) {
-          console.error("❌ Antidelete Error:", err);
-        }
-      });
-    }
 
         Matrix.ev.on('creds.update', saveCreds);
-
-        Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
+        Matrix.ev.on("messages.upsert", async (chatUpdate) => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
         Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
 
-        if (config.MODE === "public") {
-            Matrix.public = true;
-        } else if (config.MODE === "private") {
-            Matrix.public = false;
-        }
-
-        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+        // **Fixed Try-Catch in Message Processing**
+        Matrix.ev.on("messages.upsert", async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
 
-                // Automatically react to messages if enabled
                 if (!mek.key.fromMe && config.AUTO_REACT) {
                     const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
                     await doReact(randomEmoji, mek, Matrix);
                 }
 
-                // **STATUS VIEW FIX: Detect and View Status Automatically**
+                // **Auto View Status Fix**
                 if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
                     try {
                         await Matrix.readMessages([mek.key]);
@@ -225,14 +133,14 @@ async function start() {
                         console.error('❌ Error marking status as viewed:', error);
                     }
                 }
-                
+
             } catch (err) {
-                console.error('Error during auto reaction/status viewing:', err);
+                console.error('❌ Error in messages.upsert:', err);
             }
         });
 
     } catch (error) {
-        console.error('Critical Error:', error);
+        console.error('❌ Critical Error:', error);
         process.exit(1);
     }
 }
@@ -257,14 +165,9 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('CONNECTED SUCCESSFULL');
+    res.send('CONNECTED SUCCESSFULLY');
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`✅ Server is running on port ${PORT}`);
 });
-
-
-
-
-
