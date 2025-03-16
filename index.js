@@ -23,9 +23,11 @@ const { emojis, doReact } = pkg;
 
 const sessionName = "session";
 const app = express();
-const PORT = process.env.PORT || 3000;
+const orange = chalk.bold.hex("#FFA500");
+const lime = chalk.bold.hex("#32CD32");
 let useQR = false;
 let initialConnection = true;
+const PORT = process.env.PORT || 3000;
 
 const MAIN_LOGGER = pino({
     timestamp: () => `,"time":"${new Date().toJSON()}"`
@@ -67,7 +69,7 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`Bot running on WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
@@ -80,7 +82,7 @@ async function start() {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "demon-slayer whatsapp bot" };
+                return { conversation: "demon-slayer whatsapp user bot" };
             }
         });
 
@@ -92,13 +94,9 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("✅ Bot Connected"));
+                    console.log(chalk.green("Demon slayer Connected"));
                     Matrix.sendMessage(Matrix.user.id, { 
-                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
-                        caption: `🤖 *Bot Successfully Connected!*
-⚠️ Join our support group to avoid disconnection:
-🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
-👑 *Developer: Bruce Bera*`
+                        text: "✅ Bot is now online!"
                     });
                     initialConnection = false;
                 }
@@ -109,7 +107,7 @@ async function start() {
 
         Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
-        Matrix.ev.on("group-participants.update", async (message) => await GroupUpdate(Matrix, message));
+        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
 
         if (config.MODE === "public") {
             Matrix.public = true;
@@ -117,7 +115,7 @@ async function start() {
             Matrix.public = false;
         }
 
-        // Auto-React on Messages
+        // Auto-React to Messages
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
@@ -127,14 +125,13 @@ async function start() {
                     await doReact(randomEmoji, mek, Matrix);
                 }
 
-                // Auto View & React to Status
+                // View and React to Statuses
                 if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
                     try {
                         await Matrix.readMessages([mek.key]);
                         console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
 
-                        // React to status if enabled
-                        if (config.AUTO_STATUS_REACT) {
+                        if (config.AUTO_REACT) {
                             const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
                             await doReact(randomEmoji, mek, Matrix);
                         }
@@ -142,52 +139,57 @@ async function start() {
                         console.error('❌ Error marking status as viewed:', error);
                     }
                 }
-                
             } catch (err) {
                 console.error('Error during auto reaction/status viewing:', err);
             }
         });
 
-        // **Antidelete Feature**
-        Matrix.ev.on("messages.update", async (updates) => {
-            if (!config.ANTI_DELETE) return;
+        // **Anti-Delete: Sends deleted message to user's DM**
+        if (config.ANTI_DELETE) {
+            Matrix.ev.on("messages.update", async (updates) => {
+                try {
+                    for (const update of updates) {
+                        if (update.update.message && update.update.key.fromMe === false) {
+                            const deletedMessage = update.update.message;
+                            const senderJid = update.update.key.participant || update.update.key.remoteJid;
+                            
+                            if (!deletedMessage) return;
 
-            for (const update of updates) {
-                if (update.update.message && !update.update.key.fromMe) {
-                    console.log("Message deleted, recovering...");
-                    await Matrix.sendMessage(update.update.key.remoteJid, { 
-                        text: `🔁 *Recovered Message:*\n${update.update.message}` 
-                    });
+                            let messageContent = "🔹 *A message was deleted!*";
+                            const messageType = Object.keys(deletedMessage)[0];
+
+                            if (messageType === "conversation") {
+                                messageContent += `\n\n💬 *Message:* ${deletedMessage.conversation}`;
+                            } else if (messageType === "extendedTextMessage") {
+                                messageContent += `\n\n💬 *Message:* ${deletedMessage.extendedTextMessage.text}`;
+                            } else if (messageType === "imageMessage") {
+                                messageContent += "\n\n🖼 *An image was deleted!*";
+                            } else if (messageType === "videoMessage") {
+                                messageContent += "\n\n🎥 *A video was deleted!*";
+                            }
+
+                            await Matrix.sendMessage(senderJid, { text: messageContent });
+                            console.log(`📩 Sent deleted message details to ${senderJid}`);
+                        }
+                    }
+                } catch (err) {
+                    console.error("❌ Antidelete Error:", err);
                 }
-            }
-        });
+            });
+        }
 
-        // **Antitag Feature**
-        Matrix.ev.on("messages.upsert", async (chatUpdate) => {
-            try {
-                const mek = chatUpdate.messages[0];
-                if (config.ANTI_TAG && mek.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
-                    console.log("User tagged the bot, auto-replying...");
-                    await Matrix.sendMessage(mek.key.remoteJid, { text: "🚫 Don't tag me unnecessarily!" });
+        // **Anti-Left: Prevents members from leaving the group**
+        if (config.ANTI_LEFT) {
+            Matrix.ev.on("group-participants.update", async (update) => {
+                if (update.action === "remove") {
+                    try {
+                        await Matrix.groupParticipantsUpdate(update.id, [update.participants[0]], "add");
+                        console.log(`🔄 Re-added ${update.participants[0]} after they left.`);
+                    } catch (err) {
+                        console.error("❌ Error re-adding member:", err);
+                    }
                 }
-            } catch (err) {
-                console.error("Antitag Error:", err);
-            }
-        });
-
-        // **Auto Bio Feature**
-        if (config.AUTO_BIO) {
-            setInterval(async () => {
-                const bios = [
-                    "💻 Coding life, debugging dreams",
-                    "🚀 Hustle, Build, Repeat",
-                    "🎶 'Legends Never Die' - Juice WRLD",
-                    "🔄 Keep Moving Forward"
-                ];
-                const newBio = bios[Math.floor(Math.random() * bios.length)];
-                await Matrix.updateProfileStatus(newBio);
-                console.log(`🔄 Updated Bio: ${newBio}`);
-            }, 600000); // Update bio every 10 minutes
+            });
         }
 
     } catch (error) {
@@ -206,7 +208,7 @@ async function init() {
             console.log("🔒 Session downloaded, starting bot.");
             await start();
         } else {
-            console.log("No session found or downloaded, QR code will be printed for authentication.");
+            console.log("No session found, QR code will be printed.");
             useQR = true;
             await start();
         }
@@ -216,7 +218,7 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('✅ BOT CONNECTED SUCCESSFULLY');
+    res.send('CONNECTED SUCCESSFULLY');
 });
 
 app.listen(PORT, () => {
