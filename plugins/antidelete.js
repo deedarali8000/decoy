@@ -1,46 +1,32 @@
-import config from '../../config.cjs';
+const fs = require("fs");
+const path = require("path");
+const configPath = path.join(__dirname, "../config.cjs");
 
-const antiDelete = {
-    enabledChats: new Set(), // Stores chats where anti-delete is enabled
+// Function to update config
+const updateConfig = (key, value) => {
+    let config = require(configPath);
+    config[key] = value;
+    fs.writeFileSync(configPath, `module.exports = ${JSON.stringify(config, null, 4)}`);
+};
 
-    async handleMessageDelete(message, client) {
-        if (!message.key || !message.key.remoteJid || !message.key.fromMe) return;
+module.exports = {
+    name: "antidelete",
+    alias: ["antideleteon", "antideleteoff"],
+    category: "group",
+    desc: "Enable or disable message recovery",
+    async exec(msg, conn, args) {
+        if (!msg.isGroup) return msg.reply("❌ This command only works in groups.");
+        if (!msg.isAdmin) return msg.reply("❌ Only group admins can use this command.");
 
-        const chatId = message.key.remoteJid;
-        if (!this.enabledChats.has(chatId)) return; // Ignore if anti-delete is not enabled in the chat
-
-        const sender = message.key.participant || message.key.remoteJid;
-        const isGroup = chatId.endsWith('@g.us');
-        const senderName = isGroup ? `@${sender.split('@')[0]}` : "The user";
-
-        // Try to retrieve the deleted message
-        let originalMessage = message.message || {};
-        let restoredText = "";
-
-        if (originalMessage.conversation) restoredText = originalMessage.conversation;
-        else if (originalMessage.extendedTextMessage) restoredText = originalMessage.extendedTextMessage.text;
-        else if (originalMessage.imageMessage) restoredText = "[Image]";
-        else if (originalMessage.videoMessage) restoredText = "[Video]";
-        else if (originalMessage.documentMessage) restoredText = "[Document]";
-        else restoredText = "[Media Message]";
-
-        const replyText = `⚠️ *Anti-Delete Alert* ⚠️\n\n📌 ${senderName} deleted a message!\n🗑️ *Recovered Message:* ${restoredText}`;
-
-        await client.sendMessage(chatId, { text: replyText }, { quoted: message });
-    },
-
-    async toggleAntiDelete(message, client) {
-        const chatId = message.key.remoteJid;
-        const command = message.body.toLowerCase();
-
-        if (command === `${config.PREFIX}antidelete on`) {
-            this.enabledChats.add(chatId);
-            await message.reply("✅ *Anti-Delete is now ACTIVE!* Deleted messages will be restored.");
-        } else if (command === `${config.PREFIX}antidelete off`) {
-            this.enabledChats.delete(chatId);
-            await message.reply("❌ *Anti-Delete is now DISABLED!* Deleted messages will not be recovered.");
+        const option = args[0]?.toLowerCase();
+        if (option === "on") {
+            updateConfig("ANTI_DELETE", true);
+            return msg.reply("✅ *Antidelete enabled!* Deleted messages will be recovered.");
+        } else if (option === "off") {
+            updateConfig("ANTI_DELETE", false);
+            return msg.reply("❌ *Antidelete disabled!* Deleted messages will not be recovered.");
+        } else {
+            return msg.reply("⚙️ Use: *!antidelete on* or *!antidelete off*");
         }
     }
 };
-
-export default antiDelete;
