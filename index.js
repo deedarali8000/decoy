@@ -23,11 +23,9 @@ const { emojis, doReact } = pkg;
 
 const sessionName = "session";
 const app = express();
-const orange = chalk.bold.hex("#FFA500");
-const lime = chalk.bold.hex("#32CD32");
+const PORT = process.env.PORT || 3000;
 let useQR = false;
 let initialConnection = true;
-const PORT = process.env.PORT || 3000;
 
 const MAIN_LOGGER = pino({
     timestamp: () => `,"time":"${new Date().toJSON()}"`
@@ -36,10 +34,8 @@ const logger = MAIN_LOGGER.child({});
 logger.level = "trace";
 
 const msgRetryCounterCache = new NodeCache();
-
 const __filename = new URL(import.meta.url).pathname;
 const __dirname = path.dirname(__filename);
-
 const sessionDir = path.join(__dirname, 'session');
 const credsPath = path.join(sessionDir, 'creds.json');
 
@@ -69,14 +65,18 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`BERA TECH BOT using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
             browser: ["BERA-TECH", "safari", "3.3"],
-            auth: state
+            auth: state,
+            syncFullHistory: true, // Ensures bot can sync statuses
+            defaultQueryTimeoutMs: undefined, // Avoids query timeout issues
+            patchMessageBeforeSending: (message) => message,
+            markOnlineOnConnect: true, // Keeps bot online
         });
 
         Matrix.ev.on('connection.update', (update) => {
@@ -94,8 +94,12 @@ async function start() {
 │ *BERA TECH BOT*
 ╰─────────────━┈⊷
 
+╭─────────────━┈⊷
+│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
 ⚠️ *Important Notice* ⚠️
+
 To avoid disconnection from the bot, please join our support group:
+
 🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
 ╰─────────────━┈⊷
 
@@ -118,23 +122,25 @@ To avoid disconnection from the bot, please join our support group:
             Matrix.public = false;
         }
 
-        // Auto Bio Update
-        if (config.AUTO_BIO) {
-            setInterval(async () => {
-                const juiceWrldQuotes = [
-                    "Legends never die.",
-                    "The goal isn’t to live forever, the goal is to create something that will.",
-                    "Tears don’t fall, they crash around me.",
-                    "I’ll be fine once I get it, I’ll be good.",
-                    "They tell me the sky’s the limit, then give me a spaceship."
-                ];
-                const randomQuote = juiceWrldQuotes[Math.floor(Math.random() * juiceWrldQuotes.length)];
-                await Matrix.updateProfileStatus(randomQuote);
-                console.log(`✅ Updated Bio: ${randomQuote}`);
-            }, 600000); // Updates every 10 minutes
+        // ✅ Auto-View Status & React
+        if (config.AUTO_STATUS_SEEN) {
+            Matrix.ev.on('status.update', async (status) => {
+                try {
+                    console.log(`👀 Viewing status: ${status.id}`);
+                    await Matrix.readMessages([status.id]); // Marks status as viewed
+
+                    if (config.AUTO_REACT) {
+                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                        await doReact(randomEmoji, status, Matrix);
+                        console.log(`✅ Reacted to status with ${randomEmoji}`);
+                    }
+                } catch (error) {
+                    console.error('❌ Error viewing status:', error);
+                }
+            });
         }
 
-        // Anti-Delete
+        // ✅ Anti-Delete
         if (config.ANTI_DELETE) {
             Matrix.ev.on("messages.update", async (updates) => {
                 for (const update of updates) {
@@ -146,7 +152,7 @@ To avoid disconnection from the bot, please join our support group:
             });
         }
 
-        // Anti-Left
+        // ✅ Anti-Left (Re-adds users who leave)
         Matrix.ev.on("group-participants.update", async (update) => {
             if (config.ANTI_LEFT) {
                 if (update.action === "remove") {
@@ -156,18 +162,7 @@ To avoid disconnection from the bot, please join our support group:
             }
         });
 
-        // Auto-React on Status
-        if (config.AUTO_STATUS_SEEN) {
-            Matrix.ev.on('status.update', async (status) => {
-                console.log(`Viewed status: ${status.id}`);
-                if (config.AUTO_REACT) {
-                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                    await doReact(randomEmoji, status, Matrix);
-                }
-            });
-        }
-
-        // Auto-Reaction to Messages
+        // ✅ Auto-Reaction on Messages
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
@@ -175,6 +170,7 @@ To avoid disconnection from the bot, please join our support group:
                     if (mek.message) {
                         const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
                         await doReact(randomEmoji, mek, Matrix);
+                        console.log(`✅ Reacted to message with ${randomEmoji}`);
                     }
                 }
             } catch (err) {
@@ -208,7 +204,7 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('BOT CONNECTED SUCCESSFULLY');
+    res.send('BOT CONNECTED SUCCESSFUL');
 });
 
 app.listen(PORT, () => {
