@@ -18,14 +18,17 @@ import chalk from 'chalk';
 import moment from 'moment-timezone';
 import axios from 'axios';
 import config from './config.cjs';
+import autobio from './lib/autobio.cjs';
 import pkg from './lib/autoreact.cjs';
 const { emojis, doReact } = pkg;
 
 const sessionName = "session";
 const app = express();
-const PORT = process.env.PORT || 3000;
+const orange = chalk.bold.hex("#FFA500");
+const lime = chalk.bold.hex("#32CD32");
 let useQR = false;
 let initialConnection = true;
+const PORT = process.env.PORT || 3000;
 
 const MAIN_LOGGER = pino({
     timestamp: () => `,"time":"${new Date().toJSON()}"`
@@ -34,8 +37,10 @@ const logger = MAIN_LOGGER.child({});
 logger.level = "trace";
 
 const msgRetryCounterCache = new NodeCache();
+
 const __filename = new URL(import.meta.url).pathname;
 const __dirname = path.dirname(__filename);
+
 const sessionDir = path.join(__dirname, 'session');
 const credsPath = path.join(sessionDir, 'creds.json');
 
@@ -71,12 +76,15 @@ async function start() {
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["BERA-TECH", "safari", "3.3"],
+            browser: ["demon", "safari", "3.3"],
             auth: state,
-            syncFullHistory: true, // Ensures bot can sync statuses
-            defaultQueryTimeoutMs: undefined, // Avoids query timeout issues
-            patchMessageBeforeSending: (message) => message,
-            markOnlineOnConnect: true, // Keeps bot online
+            getMessage: async (key) => {
+                if (store) {
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg.message || undefined;
+                }
+                return { conversation: "demon-slayer whatsapp user bot" };
+            }
         });
 
         Matrix.ev.on('connection.update', (update) => {
@@ -87,7 +95,7 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("BERA TECH BOT Connected"));
+                    console.log(chalk.green("Demon slayer Connected"));
                     Matrix.sendMessage(Matrix.user.id, { 
                         image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
                         caption: `╭─────────────━┈⊷
@@ -96,16 +104,14 @@ async function start() {
 
 ╭─────────────━┈⊷
 │ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-⚠️ *Important Notice* ⚠️
-
-To avoid disconnection from the bot, please join our support group:
-
-🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
+│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
 ╰─────────────━┈⊷
 
 > *Regards Bruce Bera*`
                     });
                     initialConnection = false;
+                } else {
+                    console.log(chalk.blue("♻️ Connection reestablished after restart."));
                 }
             }
         });
@@ -114,7 +120,7 @@ To avoid disconnection from the bot, please join our support group:
 
         Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
-        Matrix.ev.on("group-participants.update", async (message) => await GroupUpdate(Matrix, message));
+        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
 
         if (config.MODE === "public") {
             Matrix.public = true;
@@ -122,29 +128,37 @@ To avoid disconnection from the bot, please join our support group:
             Matrix.public = false;
         }
 
-        // ✅ Auto-View Status & React
-        if (config.AUTO_STATUS_SEEN) {
-            Matrix.ev.on('status.update', async (status) => {
-                try {
-                    console.log(`👀 Viewing status: ${status.id}`);
-                    await Matrix.readMessages([status.id]); // Marks status as viewed
+        // Auto React + Status Viewing
+        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+            try {
+                const mek = chatUpdate.messages[0];
 
-                    if (config.AUTO_REACT) {
-                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        await doReact(randomEmoji, status, Matrix);
-                        console.log(`✅ Reacted to status with ${randomEmoji}`);
-                    }
-                } catch (error) {
-                    console.error('❌ Error viewing status:', error);
+                // Auto Reaction
+                if (!mek.key.fromMe && config.AUTO_REACT) {
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await doReact(randomEmoji, mek, Matrix);
                 }
-            });
-        }
 
-        // ✅ Anti-Delete
+                // Status View
+                if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
+                    try {
+                        await Matrix.readMessages([mek.key]);
+                        console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
+                    } catch (error) {
+                        console.error('❌ Error marking status as viewed:', error);
+                    }
+                }
+                
+            } catch (err) {
+                console.error('Error during auto reaction/status viewing:', err);
+            }
+        });
+
+        // **Anti-Delete Feature**
         if (config.ANTI_DELETE) {
             Matrix.ev.on("messages.update", async (updates) => {
                 for (const update of updates) {
-                    if (update.update.message && update.update.key.fromMe === false) {
+                    if (update.update.message && !update.update.key.fromMe) {
                         console.log("Message deleted, recovering...");
                         await Matrix.sendMessage(update.update.key.remoteJid, { text: `*Recovered Message:*\n${update.update.message}` });
                     }
@@ -152,31 +166,22 @@ To avoid disconnection from the bot, please join our support group:
             });
         }
 
-        // ✅ Anti-Left (Re-adds users who leave)
-        Matrix.ev.on("group-participants.update", async (update) => {
-            if (config.ANTI_LEFT) {
-                if (update.action === "remove") {
-                    console.log(`${update.participants[0]} left, re-adding...`);
-                    await Matrix.groupParticipantsUpdate(update.id, [update.participants[0]], "add");
-                }
+        // **Anti-Tag Feature**
+        Matrix.ev.on("messages.upsert", async (chatUpdate) => {
+            const mek = chatUpdate.messages[0];
+            if (mek.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 3 && config.ANTI_TAG) {
+                await Matrix.sendMessage(mek.key.remoteJid, { text: "🚫 Mass tagging is not allowed!" });
             }
         });
 
-        // ✅ Auto-Reaction on Messages
-        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
-            try {
-                const mek = chatUpdate.messages[0];
-                if (!mek.key.fromMe && config.AUTO_REACT) {
-                    if (mek.message) {
-                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        await doReact(randomEmoji, mek, Matrix);
-                        console.log(`✅ Reacted to message with ${randomEmoji}`);
-                    }
-                }
-            } catch (err) {
-                console.error('Error during auto reaction:', err);
-            }
-        });
+        // **Auto-Bio Feature**
+        if (config.AUTO_BIO) {
+            setInterval(async () => {
+                const newBio = await autobio.generateBio();
+                await Matrix.updateProfileStatus(newBio);
+                console.log(`📝 Updated Bio: ${newBio}`);
+            }, 10 * 60 * 1000);
+        }
 
     } catch (error) {
         console.error('Critical Error:', error);
@@ -204,11 +209,9 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('BOT CONNECTED SUCCESSFUL');
+    res.send('CONNECTED SUCCESSFULL');
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
-// updated by Bera
