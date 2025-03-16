@@ -5,9 +5,9 @@
   "keywords": ["BERA-TECH"],
   "repository": "https://github.com/DEVELOPER-BERA/decoy",
   "stack": "container",
-  "env": { 
-      "SESSION_ID": {
-      "description": "Ensure your session Id starts with the word BERA-TECH$",
+  "env": {
+    "SESSION_ID": {
+      "description": "Ensure your session Id starts with the word TREX-MD$",
       "required": true,
       "value": ""
     },
@@ -16,73 +16,83 @@
       "required": true,
       "value": "public"
     },
+    "ANTI_DELETE": {
+      "description": "Make it true to enable anti-delete",
+      "required": true,
+      "value": "true"
+    },
     "AUTO_BIO": {
-      "description": "make it true if you want the bot to update de bio after restart",
+      "description": "Make it true to enable automatic bio updates",
       "required": false,
-      "value": "false"
+      "value": "true"
+    },
+    "BIO_TEXT": {
+      "description": "Set the bio text format (use {time} for dynamic time updates)",
+      "required": false,
+      "value": "I'm online 🚀 | Time: {time}"
     },
     "AUTO_STATUS_SEEN": {
-      "description": "make it true if you want bot to view status",
+      "description": "Make it true if you want the bot to view statuses",
       "required": false,
       "value": "true"
     },
     "AUTO_STATUS_REPLY": {
-      "description": "make it true if you want to send message after seen status",
+      "description": "Make it true if you want the bot to send a message after viewing a status",
       "required": false,
       "value": "false"
     },
     "STATUS_READ_MSG": {
-      "description": "set your status reply message",
+      "description": "Set your status reply message",
       "required": false,
-      "value": "*Status Seen *"
+      "value": "*Status Seen*"
     },
     "OWNER_NAME": {
-      "description": "set your status reply message",
+      "description": "Set the bot owner's name",
       "required": false,
       "value": "BRUCE BERA"
     },
     "OWNER_NUMBER": {
-      "description": "set your status reply message",
+      "description": "Set the bot owner's number",
       "required": false,
       "value": "254743982206"
     },
     "AUTO_READ": {
-      "description": "make it true if you want bot to read message",
+      "description": "Make it true if you want the bot to read messages automatically",
       "required": false,
       "value": "false"
     },
     "AUTO_TYPING": {
-      "description": "make it true if you want bot to show typing",
+      "description": "Make it true if you want the bot to show typing status",
       "required": false,
       "value": "false"
     },
     "AUTO_RECORDING": {
-      "description": "make it true if you want bot to show recording audio",
+      "description": "Make it true if you want the bot to show recording audio status",
       "required": false,
       "value": "false"
     },
     "ALWAYS_ONLINE": {
-      "description": "make it true if you want bot to show always online",
+      "description": "Make it true if you want the bot to always appear online",
       "required": false,
       "value": "false"
     },
     "AUTO_BLOCK": {
-      "description": "make it true if you want bot to auto block only 212 numbers",
+      "description": "Make it true if you want the bot to auto-block 212 numbers",
       "required": false,
       "value": "false"
     },
     "REJECT_CALL": {
-      "description": "make it true if you want to reject call",
+      "description": "Make it true if you want the bot to reject calls",
       "required": false,
       "value": "false"
     },
     "PREFIX": {
-      "description": "Your Bot Prefix default (.)",
+      "description": "Set your bot prefix (default is .)",
       "required": false,
       "value": "."
     }
-    },
-    "buildpacks": [
+  },
+  "buildpacks": [
     {
       "url": "heroku/nodejs"
     },
@@ -96,5 +106,4 @@
       "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git"
     }
   ]
-}
-
+    }
