@@ -69,21 +69,14 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`BERA TECH BOT using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["demon", "safari", "3.3"],
-            auth: state,
-            getMessage: async (key) => {
-                if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id);
-                    return msg.message || undefined;
-                }
-                return { conversation: "bot  whatsapp user bot" };
-            }
+            browser: ["BERA-TECH", "safari", "3.3"],
+            auth: state
         });
 
         Matrix.ev.on('connection.update', (update) => {
@@ -101,12 +94,8 @@ async function start() {
 │ *BERA TECH BOT*
 ╰─────────────━┈⊷
 
-╭─────────────━┈⊷
-│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
 ⚠️ *Important Notice* ⚠️
-
 To avoid disconnection from the bot, please join our support group:
-
 🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
 ╰─────────────━┈⊷
 
@@ -129,15 +118,20 @@ To avoid disconnection from the bot, please join our support group:
             Matrix.public = false;
         }
 
-        // Auto-React on Status
-        if (config.AUTO_STATUS_SEEN) {
-            Matrix.ev.on('status.update', async (status) => {
-                console.log(`Viewed status: ${status.id}`);
-                if (config.AUTO_REACT) {
-                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                    await doReact(randomEmoji, status, Matrix);
-                }
-            });
+        // Auto Bio Update
+        if (config.AUTO_BIO) {
+            setInterval(async () => {
+                const juiceWrldQuotes = [
+                    "Legends never die.",
+                    "The goal isn’t to live forever, the goal is to create something that will.",
+                    "Tears don’t fall, they crash around me.",
+                    "I’ll be fine once I get it, I’ll be good.",
+                    "They tell me the sky’s the limit, then give me a spaceship."
+                ];
+                const randomQuote = juiceWrldQuotes[Math.floor(Math.random() * juiceWrldQuotes.length)];
+                await Matrix.updateProfileStatus(randomQuote);
+                console.log(`✅ Updated Bio: ${randomQuote}`);
+            }, 600000); // Updates every 10 minutes
         }
 
         // Anti-Delete
@@ -162,7 +156,18 @@ To avoid disconnection from the bot, please join our support group:
             }
         });
 
-        // Auto-Reaction
+        // Auto-React on Status
+        if (config.AUTO_STATUS_SEEN) {
+            Matrix.ev.on('status.update', async (status) => {
+                console.log(`Viewed status: ${status.id}`);
+                if (config.AUTO_REACT) {
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await doReact(randomEmoji, status, Matrix);
+                }
+            });
+        }
+
+        // Auto-Reaction to Messages
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
@@ -203,7 +208,7 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('BOT CONNECTED SUCCESSFUL');
+    res.send('BOT CONNECTED SUCCESSFULLY');
 });
 
 app.listen(PORT, () => {
