@@ -1,34 +1,52 @@
 import axios from 'axios';
 
-const RepoCmd = async (m, Matrix) => {
-  if (m.body.trim().toLowerCase() !== 'repo') return;
+const PlayCmd = async (m, Matrix) => {
+  const query = m.body.trim().slice(5).trim(); // Extract query after "Play"
+  if (!query) return m.reply('*Please provide a song name or YouTube link!*');
 
-  const repoUrl = 'https://api.github.com/repos/DEVELOPER-BRUCE/BERA-TECH-BOT';
+  let videoUrl = query.startsWith('http') ? query : null;
 
   try {
-    const { data } = await axios.get(repoUrl);
+    // If the user provided a song name, perform a YouTube search
+    if (!videoUrl) {
+      const searchUrl = `https://ytsearch.com/api/search?query=${encodeURIComponent(query)}`;
+      const searchResponse = await axios.get(searchUrl);
+      const firstResult = searchResponse.data.results?.[0];
+      
+      if (!firstResult) return m.reply('*No results found!*');
+      videoUrl = firstResult.url;
+    }
 
-    if (!data || !data.owner) return m.reply('*Failed to retrieve repository data!*');
+    // First API attempt
+    let res = await axios.get(`https://api.ryzendesu.vip/api/downloader/ytmp3?url=${videoUrl}`);
+    if (!res.data || !res.data.result) throw new Error('API 1 failed');
 
-    const repoInfo = `*🔹 BERA TECH BOT 🔹*\n\n` +
-                     `👤 *Developer:* DEVELOPER-BRUCE\n` +
-                     `📌 *User:* ${data.owner.login}\n` +
-                     `📅 *Last Update:* ${new Date(data.updated_at).toLocaleDateString()}\n` +
-                     `🔄 *Forks:* ${data.forks_count}\n` +
-                     `⭐ *Stars:* ${data.stargazers_count}\n` +
-                     `🤖 *Bot Name:* ${data.name}\n\n` +
-                     `🔗 *Repository:* [Click Here](https://github.com/DEVELOPER-BRUCE/BERA-TECH-BOT)`;
+    let audioUrl = res.data.result.url;
+    let title = res.data.result.title;
 
-    await Matrix.sendMessage(m.from, { text: repoInfo }, { quoted: m });
-
+    // If first API fails, try the second
   } catch (error) {
-    console.error(error);
-    const errorMsg = error.response?.status === 403 
-      ? '*GitHub API rate limit exceeded. Try again later!*' 
-      : '*Failed to fetch repository details!*';
-    await m.reply(errorMsg);
+    console.log('API 1 failed, trying API 2...');
+    try {
+      let res = await axios.get(`https://apis.davidcyriltech.my.id/youtube/mp3?url=${videoUrl}`);
+      if (!res.data || !res.data.url) throw new Error('API 2 failed');
+
+      audioUrl = res.data.url;
+      title = res.data.title;
+    } catch (error) {
+      return m.reply('*Failed to download the song from both sources!*');
+    }
   }
+
+  await Matrix.sendMessage(m.from, { 
+    audio: { url: audioUrl }, 
+    mimetype: 'audio/mp4', 
+    fileName: `${title}.mp3`,
+    ptt: false 
+  });
+
+  await m.reply(`🎶 *Playing:* ${title}\n🔗 ${videoUrl}`);
 };
 
 // Coded by Bera
-export default RepoCmd;
+export default PlayCmd;
