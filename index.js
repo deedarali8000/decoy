@@ -18,17 +18,14 @@ import chalk from 'chalk';
 import moment from 'moment-timezone';
 import axios from 'axios';
 import config from './config.cjs';
-import autobio from './lib/autobio.cjs';
 import pkg from './lib/autoreact.cjs';
 const { emojis, doReact } = pkg;
 
 const sessionName = "session";
 const app = express();
-const orange = chalk.bold.hex("#FFA500");
-const lime = chalk.bold.hex("#32CD32");
+const PORT = process.env.PORT || 3000;
 let useQR = false;
 let initialConnection = true;
-const PORT = process.env.PORT || 3000;
 
 const MAIN_LOGGER = pino({
     timestamp: () => `,"time":"${new Date().toJSON()}"`
@@ -70,7 +67,7 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`Bot running on WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
@@ -83,7 +80,7 @@ async function start() {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "demon-slayer whatsapp user bot" };
+                return { conversation: "demon-slayer whatsapp bot" };
             }
         });
 
@@ -95,23 +92,15 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("Demon slayer Connected"));
+                    console.log(chalk.green("✅ Bot Connected"));
                     Matrix.sendMessage(Matrix.user.id, { 
                         image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
-                        caption: `╭─────────────━┈⊷
-│ *BERA TECH BOT*
-╰─────────────━┈⊷
-
-╭─────────────━┈⊷
-│ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
-╰─────────────━┈⊷
-
-> *Regards Bruce Bera*`
+                        caption: `🤖 *Bot Successfully Connected!*
+⚠️ Join our support group to avoid disconnection:
+🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
+👑 *Developer: Bruce Bera*`
                     });
                     initialConnection = false;
-                } else {
-                    console.log(chalk.blue("♻️ Connection reestablished after restart."));
                 }
             }
         });
@@ -120,7 +109,7 @@ async function start() {
 
         Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
-        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
+        Matrix.ev.on("group-participants.update", async (message) => await GroupUpdate(Matrix, message));
 
         if (config.MODE === "public") {
             Matrix.public = true;
@@ -128,22 +117,27 @@ async function start() {
             Matrix.public = false;
         }
 
-        // Auto React + Status Viewing
+        // Auto-React on Messages
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
 
-                // Auto Reaction
                 if (!mek.key.fromMe && config.AUTO_REACT) {
                     const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
                     await doReact(randomEmoji, mek, Matrix);
                 }
 
-                // Status View
+                // Auto View & React to Status
                 if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
                     try {
                         await Matrix.readMessages([mek.key]);
                         console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
+
+                        // React to status if enabled
+                        if (config.AUTO_STATUS_REACT) {
+                            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                            await doReact(randomEmoji, mek, Matrix);
+                        }
                     } catch (error) {
                         console.error('❌ Error marking status as viewed:', error);
                     }
@@ -154,33 +148,46 @@ async function start() {
             }
         });
 
-        // **Anti-Delete Feature**
-        if (config.ANTI_DELETE) {
-            Matrix.ev.on("messages.update", async (updates) => {
-                for (const update of updates) {
-                    if (update.update.message && !update.update.key.fromMe) {
-                        console.log("Message deleted, recovering...");
-                        await Matrix.sendMessage(update.update.key.remoteJid, { text: `*Recovered Message:*\n${update.update.message}` });
-                    }
-                }
-            });
-        }
+        // **Antidelete Feature**
+        Matrix.ev.on("messages.update", async (updates) => {
+            if (!config.ANTI_DELETE) return;
 
-        // **Anti-Tag Feature**
-        Matrix.ev.on("messages.upsert", async (chatUpdate) => {
-            const mek = chatUpdate.messages[0];
-            if (mek.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 3 && config.ANTI_TAG) {
-                await Matrix.sendMessage(mek.key.remoteJid, { text: "🚫 Mass tagging is not allowed!" });
+            for (const update of updates) {
+                if (update.update.message && !update.update.key.fromMe) {
+                    console.log("Message deleted, recovering...");
+                    await Matrix.sendMessage(update.update.key.remoteJid, { 
+                        text: `🔁 *Recovered Message:*\n${update.update.message}` 
+                    });
+                }
             }
         });
 
-        // **Auto-Bio Feature**
+        // **Antitag Feature**
+        Matrix.ev.on("messages.upsert", async (chatUpdate) => {
+            try {
+                const mek = chatUpdate.messages[0];
+                if (config.ANTI_TAG && mek.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
+                    console.log("User tagged the bot, auto-replying...");
+                    await Matrix.sendMessage(mek.key.remoteJid, { text: "🚫 Don't tag me unnecessarily!" });
+                }
+            } catch (err) {
+                console.error("Antitag Error:", err);
+            }
+        });
+
+        // **Auto Bio Feature**
         if (config.AUTO_BIO) {
             setInterval(async () => {
-                const newBio = await autobio.generateBio();
+                const bios = [
+                    "💻 Coding life, debugging dreams",
+                    "🚀 Hustle, Build, Repeat",
+                    "🎶 'Legends Never Die' - Juice WRLD",
+                    "🔄 Keep Moving Forward"
+                ];
+                const newBio = bios[Math.floor(Math.random() * bios.length)];
                 await Matrix.updateProfileStatus(newBio);
-                console.log(`📝 Updated Bio: ${newBio}`);
-            }, 10 * 60 * 1000);
+                console.log(`🔄 Updated Bio: ${newBio}`);
+            }, 600000); // Update bio every 10 minutes
         }
 
     } catch (error) {
@@ -209,7 +216,7 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('CONNECTED SUCCESSFULL');
+    res.send('✅ BOT CONNECTED SUCCESSFULLY');
 });
 
 app.listen(PORT, () => {
