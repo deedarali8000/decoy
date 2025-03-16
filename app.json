@@ -1,105 +1,90 @@
 {
   "name": "BERA TECH",
   "description": "I am BERA TECH WhatsApp MultiDevice Bot built in NodeJs to enhance the experience.",
-  "logo": "https://files.catbox.moe/7xgzln.jpg",
-  "keywords": ["BERA-TECH"],
+  "logo": "https://files.catbox.moe/waszph.jpg",
+  "keywords": ["BERA-TECH", "whatsapp-bot", "whatsapp-md-bot"],
   "repository": "https://github.com/DEVELOPER-BERA/decoy",
   "stack": "container",
-  "env": {
+  "env": { 
     "SESSION_ID": {
-      "description": "Ensure your session ID starts with 'TREX-MD$'",
+      "description": "Ensure your session Id starts with the word TREX-MD$",
       "required": true,
       "value": ""
     },
     "MODE": {
-      "description": "Set to 'public' for everyone or 'private' for owner-only mode.",
+      "description": "Set to 'public' or 'private' to define bot mode",
       "required": true,
       "value": "public"
     },
-    "ANTI_DELETE": {
-      "description": "Enable anti-delete messages (true/false).",
-      "required": true,
-      "value": "true"
-    },
-    "AUTO_STATUS_SEEN": {
-      "description": "Enable bot to automatically view statuses (true/false).",
+    "PREFIX": {
+      "description": "Your Bot Prefix (default: .)",
       "required": false,
-      "value": "true"
-    },
-    "AUTO_STATUS_REPLY": {
-      "description": "Enable bot to send a message after viewing status (true/false).",
-      "required": false,
-      "value": "false"
-    },
-    "STATUS_READ_MSG": {
-      "description": "Customize the message sent after viewing status.",
-      "required": false,
-      "value": "*Status Seen*"
+      "value": "."
     },
     "OWNER_NAME": {
-      "description": "Set the bot owner's name.",
+      "description": "Your name as the bot owner",
       "required": false,
       "value": "BRUCE BERA"
     },
     "OWNER_NUMBER": {
-      "description": "Set the bot owner's phone number (including country code).",
+      "description": "Your WhatsApp number",
       "required": false,
       "value": "254743982206"
     },
     "AUTO_READ": {
-      "description": "Enable bot to automatically read messages (true/false).",
+      "description": "Enable bot to auto-read messages (true/false)",
       "required": false,
       "value": "false"
     },
     "AUTO_TYPING": {
-      "description": "Enable bot to show 'typing...' when responding (true/false).",
+      "description": "Enable bot to show typing status (true/false)",
       "required": false,
       "value": "false"
     },
     "AUTO_RECORDING": {
-      "description": "Enable bot to show 'recording audio...' when sending a voice note (true/false).",
+      "description": "Enable bot to show recording status (true/false)",
       "required": false,
       "value": "false"
     },
     "ALWAYS_ONLINE": {
-      "description": "Enable bot to always appear online (true/false).",
-      "required": false,
-      "value": "false"
-    },
-    "AUTO_BLOCK": {
-      "description": "Enable bot to auto-block spam numbers (only 212 country code).",
-      "required": false,
-      "value": "false"
-    },
-    "REJECT_CALL": {
-      "description": "Enable bot to automatically reject calls (true/false).",
-      "required": false,
-      "value": "false"
-    },
-    "AUTO_DL": {
-      "description": "Enable bot to automatically download media (true/false).",
+      "description": "Keep bot always online (true/false)",
       "required": false,
       "value": "false"
     },
     "AUTO_REACT": {
-      "description": "Enable bot to auto-react to messages (true/false).",
+      "description": "Enable bot to auto-react to messages (true/false)",
       "required": false,
       "value": "false"
     },
-    "GEMINI_KEY": {
-      "description": "Set your Gemini AI API key (optional).",
-      "required": false,
-      "value": ""
+    "ANTI_DELETE": {
+      "description": "Enable anti-delete feature (true/false)",
+      "required": true,
+      "value": "true"
     },
-    "WELCOME": {
-      "description": "Enable welcome messages in groups (true/false).",
+    "AUTO_STATUS_SEEN": {
+      "description": "Enable bot to view statuses (true/false)",
+      "required": false,
+      "value": "true"
+    },
+    "AUTO_STATUS_REPLY": {
+      "description": "Enable bot to reply after viewing a status (true/false)",
       "required": false,
       "value": "false"
     },
-    "PREFIX": {
-      "description": "Set the bot command prefix (default: '.').",
+    "STATUS_READ_MSG": {
+      "description": "Set the message bot sends after viewing a status",
       "required": false,
-      "value": "."
+      "value": "*Status Seen*"
+    },
+    "AUTO_BLOCK": {
+      "description": "Enable bot to auto-block specific numbers (true/false)",
+      "required": false,
+      "value": "false"
+    },
+    "REJECT_CALL": {
+      "description": "Enable bot to reject incoming calls (true/false)",
+      "required": false,
+      "value": "false"
     }
   },
   "buildpacks": [
@@ -116,4 +101,4 @@
       "url": "https://github.com/clhuang/heroku-buildpack-webp-binaries.git"
     }
   ]
-}
+  }
