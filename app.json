@@ -5,91 +5,76 @@
   "keywords": ["BERA-TECH"],
   "repository": "https://github.com/DEVELOPER-BERA/decoy",
   "stack": "container",
-  "env": {
+  "env": { 
     "SESSION_ID": {
-      "description": "Ensure your session Id starts with the word TREX-MD$",
+      "description": "Ensure your session Id starts with the word BERA-TECH$",
       "required": true,
       "value": ""
     },
     "MODE": {
-      "description": "Write true or false to make your bot mode public or self",
+      "description": "Write public or private to set bot mode",
       "required": true,
       "value": "public"
     },
     "ANTI_DELETE": {
-      "description": "Make it true to enable anti-delete",
+      "description": "Set to true for anti delete",
       "required": true,
       "value": "true"
     },
-    "AUTO_BIO": {
-      "description": "Make it true to enable automatic bio updates",
-      "required": false,
-      "value": "true"
-    },
-    "BIO_TEXT": {
-      "description": "Set the bio text format (use {time} for dynamic time updates)",
-      "required": false,
-      "value": "I'm online 🚀 | Time: {time}"
-    },
     "AUTO_STATUS_SEEN": {
-      "description": "Make it true if you want the bot to view statuses",
+      "description": "Set to true if you want bot to view status",
       "required": false,
       "value": "true"
     },
     "AUTO_STATUS_REPLY": {
-      "description": "Make it true if you want the bot to send a message after viewing a status",
+      "description": "Set to true to auto reply after viewing status",
       "required": false,
       "value": "false"
     },
     "STATUS_READ_MSG": {
-      "description": "Set your status reply message",
+      "description": "Set the status reply message",
       "required": false,
       "value": "*Status Seen*"
     },
     "OWNER_NAME": {
-      "description": "Set the bot owner's name",
+      "description": "Set the bot owner name",
       "required": false,
       "value": "BRUCE BERA"
     },
     "OWNER_NUMBER": {
-      "description": "Set the bot owner's number",
+      "description": "Set the bot owner number",
       "required": false,
       "value": "254743982206"
     },
     "AUTO_READ": {
-      "description": "Make it true if you want the bot to read messages automatically",
+      "description": "Set to true to enable auto read messages",
       "required": false,
       "value": "false"
     },
     "AUTO_TYPING": {
-      "description": "Make it true if you want the bot to show typing status",
+      "description": "Set to true to show typing status",
       "required": false,
       "value": "false"
     },
     "AUTO_RECORDING": {
-      "description": "Make it true if you want the bot to show recording audio status",
+      "description": "Set to true to show recording status",
       "required": false,
       "value": "false"
     },
     "ALWAYS_ONLINE": {
-      "description": "Make it true if you want the bot to always appear online",
+      "description": "Set to true to keep bot always online",
       "required": false,
       "value": "false"
     },
-    "AUTO_BLOCK": {
-      "description": "Make it true if you want the bot to auto-block 212 numbers",
+    "AUTO_BIO": {
+      "description": "Set to true to enable auto bio updates every 10 minutes",
       "required": false,
-      "value": "false"
-    },
-    "REJECT_CALL": {
-      "description": "Make it true if you want the bot to reject calls",
-      "required": false,
-      "value": "false"
+      "value": "true"
     },
     "PREFIX": {
-      "description": "Set your bot prefix (default is .)",
+      "description": "Bot command prefix ",
       "required": false,
-      "value": "."
+      "value": " "
     }
   },
   "buildpacks": [
