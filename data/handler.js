@@ -49,20 +49,38 @@ const Handler = async (chatUpdate, sock, logger) => {
             isCreator = m.sender === ownerNumber || m.sender === botNumber;
         }
 
+        if (!sock.public) {
+            if (!isCreator) {
+                return;
+            }
+        }
+
         await handleAntilink(m, sock, logger, isBotAdmins, isAdmins, isCreator);
 
-        // ✅ Plugin Loading Fix
+        const { isGroup, type, sender, from, body } = m;
+      //  console.log(m);
+
+        // ✅ Corrected Plugin Folder Path
         const pluginDir = path.resolve(__dirname, '..', 'plugins');  
+        
         try {
             const pluginFiles = await fs.readdir(pluginDir);
+
             for (const file of pluginFiles) {
                 if (file.endsWith('.js')) {
-                    const pluginModule = await import(`file://${pluginDir}/${file}`);
-                    await pluginModule.default(m, sock);
+                    const pluginPath = path.join(pluginDir, file);
+                    
+                    try {
+                        const pluginModule = await import(`file://${pluginPath}`);
+                        const loadPlugins = pluginModule.default;
+                        await loadPlugins(m, sock);
+                    } catch (err) {
+                        console.error(`❌ Failed to load plugin: ${pluginPath}`, err);
+                    }
                 }
             }
         } catch (err) {
-            console.error(`❌ Plugin folder error:`, err);
+            console.error(`❌ Plugin folder not found: ${pluginDir}`, err);
         }
 
     } catch (e) {
@@ -71,3 +89,5 @@ const Handler = async (chatUpdate, sock, logger) => {
 };
 
 export default Handler;
+        
+            
