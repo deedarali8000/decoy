@@ -69,13 +69,13 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`demon-slayer using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`BERA-TECH using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
         const Matrix = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["demon", "safari", "3.3"],
+            browser: ["BERA", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
                 if (store) {
@@ -94,19 +94,21 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green(" Connected"));
+                    console.log(chalk.green("Demon slayer Connected"));
                     Matrix.sendMessage(Matrix.user.id, { 
-                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
+                        image: { url: "https://files.catbox.moe/5kvvfg.jpg" }, 
                         caption: `╭─────────────━┈⊷
-│ *BERA TECH BOT*
+│ *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ*
 ╰─────────────━┈⊷
 
 ╭─────────────━┈⊷
 │ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
+│ ⚠️ Join our support group to avoid disconnection:
+│🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
+│
 ╰─────────────━┈⊷
 
-> *Regards Bruce Bera*`
+> *ʀᴇɢᴀʀᴅs ʙᴇʀᴀ ᴛᴇᴄʜ*`
                     });
                     initialConnection = false;
                 } else {
@@ -114,6 +116,83 @@ async function start() {
                 }
             }
         });
+        Matrix.ev.on("group-participants.update", async (update) => {
+    try {
+        const { id, participants, action } = update;
+
+        if (config.ANTI_LEFT && action === "remove") {
+            for (const user of participants) {
+                const metadata = await Matrix.groupMetadata(id);
+                const admins = metadata.participants.filter(p => p.admin).map(p => p.id);
+                
+                // Check if the user was kicked by an admin
+                if (!admins.includes(user)) {
+                    try {
+                        await Matrix.groupParticipantsUpdate(id, [user], "add");
+                        console.log(`Re-added ${user} to the group!`);
+                        await Matrix.sendMessage(id, { text: `*${user.split('@')[0]} left the group and was re-added!*` });
+                    } catch (error) {
+                        console.error(`❌ Failed to re-add ${user}:`, error);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Antileft Error:", err);
+    }
+});
+        }
+
+        // Auto View & React to Status (for broadcast messages)
+        if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
+          try {
+            await Matrix.readMessages([mek.key]);
+            console.log(chalk.green(`Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
+            if (config.AUTO_REACT) {
+              const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+              await doReact(randomEmoji, mek, Matrix);
+              console.log(`Reacted to status with ${randomEmoji}`);
+            }
+          } catch (error) {
+            console.error('❌ Error marking status as viewed:', error);
+          }
+        }
+      } catch (err) {
+        console.error('Error during auto reaction/status viewing:', err);
+      }
+    });
+
+    // Anti-Delete: Send deleted message details to the user's DM
+    if (config.ANTI_DELETE) {
+      Matrix.ev.on("messages.update", async (updates) => {
+        try {
+          for (const update of updates) {
+            if (update.update.message && !update.update.key.fromMe) {
+              const deletedMessage = update.update.message;
+              const senderJid = update.update.key.participant || update.update.key.remoteJid;
+              if (!deletedMessage) continue;
+
+              let messageContent = "🔹 *A message was deleted!*";
+              const messageType = Object.keys(deletedMessage)[0];
+              if (messageType === "conversation") {
+                messageContent += `\n\n💬 *Message:* ${deletedMessage.conversation}`;
+              } else if (messageType === "extendedTextMessage") {
+                messageContent += `\n\n💬 *Message:* ${deletedMessage.extendedTextMessage.text}`;
+              } else if (messageType === "imageMessage") {
+                messageContent += "\n\n🖼 *An image was deleted!*";
+              } else if (messageType === "videoMessage") {
+                messageContent += "\n\n*A video was deleted!*";
+              }
+              // Send the deleted message details to the user's DM
+              await Matrix.sendMessage(senderJid, { text: messageContent });
+              console.log(`Sent deleted message details to ${senderJid}`);
+            }
+          }
+        } catch (err) {
+          console.error("❌ Antidelete Error:", err);
+        }
+      });
+    }
 
         Matrix.ev.on('creds.update', saveCreds);
 
@@ -184,3 +263,8 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+
+
+
