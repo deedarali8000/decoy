@@ -27,13 +27,17 @@ const config = {
   BIO_TEXTS: [
     "💔 Legends never die | {time}",
     "🌧️ I still see your shadows in my room | {time}",
-    "🔥 pain is part of progress  | {time}",
+    "🔥 I cannot change you, so I must replace you | {time}",
     "🌪️ Wishing well of lost souls | {time}",
-    "🌟 Through pain we rise| {time}",
+    "🌟 pain is part of progress | {time}",
     "🎤 We ain't making it past 21 | {time}",
     "💭 Thinking too much, my mind is a maze | {time}",
     "🚀 Blast off to another galaxy | {time}"
-  ]
+  ],
+
+  // Anti Left Feature
+  ANTI_LEFT: process.env.ANTI_LEFT !== undefined ? process.env.ANTI_LEFT === 'true' : true,
+  ANTI_LEFT_MSG: process.env.ANTI_LEFT_MSG || "🚨 You cannot leave this group! You've been added back automatically."
 };
 
 module.exports = config;
