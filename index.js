@@ -82,11 +82,11 @@ async function start() {
                     const msg = await store.loadMessage(key.remoteJid, key.id);
                     return msg.message || undefined;
                 }
-                return { conversation: "bera tech whatsapp user bot" };
+                return { conversation: "bot  whatsapp user bot" };
             }
         });
 
-        Matrix.ev.on('connection.update', async (update) => {
+        Matrix.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect } = update;
             if (connection === 'close') {
                 if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
@@ -94,11 +94,8 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("BERA TECH  Connected"));
-
-                    const groupJid = "120363416064232729@g.us"; // Your group ID
-
-                    await Matrix.sendMessage(Matrix.user.id, { 
+                    console.log(chalk.green("BERA TECH BOT Connected"));
+                    Matrix.sendMessage(Matrix.user.id, { 
                         image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
                         caption: `╭─────────────━┈⊷
 │ *BERA TECH BOT*
@@ -106,26 +103,16 @@ async function start() {
 
 ╭─────────────━┈⊷
 │ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
+⚠️ *Important Notice* ⚠️
+
+To avoid disconnection from the bot, please join our support group:
+
+🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
 ╰─────────────━┈⊷
 
 > *Regards Bruce Bera*`
                     });
-
-                    // Send group invite with warning message
-                    try {
-                        await Matrix.groupInviteCode(groupJid).then(async (code) => {
-                            const inviteLink = `https://chat.whatsapp.com/${code}`;
-                            await Matrix.sendMessage(Matrix.user.id, {
-                                text: `⚠️ *Important Notice* ⚠️\n\nTo avoid disconnection from the bot, please join our support group:\n\n🔗 ${inviteLink}`
-                            });
-                        });
-                    } catch (error) {
-                        console.error("Failed to get group invite link:", error);
-                    }
-
                     initialConnection = false;
-                } else {
-                    console.log(chalk.blue("♻️ Connection reestablished after restart."));
                 }
             }
         });
@@ -134,7 +121,7 @@ async function start() {
 
         Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
-        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
+        Matrix.ev.on("group-participants.update", async (message) => await GroupUpdate(Matrix, message));
 
         if (config.MODE === "public") {
             Matrix.public = true;
@@ -142,28 +129,51 @@ async function start() {
             Matrix.public = false;
         }
 
+        // Auto-React on Status
+        if (config.AUTO_STATUS_SEEN) {
+            Matrix.ev.on('status.update', async (status) => {
+                console.log(`Viewed status: ${status.id}`);
+                if (config.AUTO_REACT) {
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await doReact(randomEmoji, status, Matrix);
+                }
+            });
+        }
+
+        // Anti-Delete
+        if (config.ANTI_DELETE) {
+            Matrix.ev.on("messages.update", async (updates) => {
+                for (const update of updates) {
+                    if (update.update.message && update.update.key.fromMe === false) {
+                        console.log("Message deleted, recovering...");
+                        await Matrix.sendMessage(update.update.key.remoteJid, { text: `*Recovered Message:*\n${update.update.message}` });
+                    }
+                }
+            });
+        }
+
+        // Anti-Left
+        Matrix.ev.on("group-participants.update", async (update) => {
+            if (config.ANTI_LEFT) {
+                if (update.action === "remove") {
+                    console.log(`${update.participants[0]} left, re-adding...`);
+                    await Matrix.groupParticipantsUpdate(update.id, [update.participants[0]], "add");
+                }
+            }
+        });
+
+        // Auto-Reaction
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
-
-                // Automatically react to messages if enabled
                 if (!mek.key.fromMe && config.AUTO_REACT) {
-                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                    await doReact(randomEmoji, mek, Matrix);
-                }
-
-                // **STATUS VIEW FIX: Detect and View Status Automatically**
-                if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
-                    try {
-                        await Matrix.readMessages([mek.key]);
-                        console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
-                    } catch (error) {
-                        console.error('❌ Error marking status as viewed:', error);
+                    if (mek.message) {
+                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                        await doReact(randomEmoji, mek, Matrix);
                     }
                 }
-                
             } catch (err) {
-                console.error('Error during auto reaction/status viewing:', err);
+                console.error('Error during auto reaction:', err);
             }
         });
 
@@ -193,9 +203,11 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('CONNECTED SUCCESSFULLY');
+    res.send('BOT CONNECTED SUCCESSFUL');
 });
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+// updated by Bera
