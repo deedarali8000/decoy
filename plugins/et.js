@@ -8,7 +8,7 @@ const searchRepo = async (m, Matrix) => {
   const cmd = m.body.startsWith(prefix) ? m.body.slice(prefix.length).split(' ')[0].toLowerCase() : '';
 
   if (cmd === 'repo') {
-    const repoUrl = `https://api.github.com/repos/DEVELOPER-BRUCE/BERA-TECH`;
+    const repoUrl = `https://api.github.com/repos/DEVELOPER-BRUCE/BERA-TECH-BOT`;
     await handleRepoCommand(m, Matrix, repoUrl);
   }
 };
