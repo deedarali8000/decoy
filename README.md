@@ -35,7 +35,7 @@
 💜 Deploy **Bera Tech Bot** on **Heroku** with one click:  
 
 <p align="center">
-  <a href="https://bera-tech-server.vercel.app" target="_blank">
+  <a href="https://dashboard.heroku.com/new?template=https%3A%2F%2Fgithub.com%2FDEVELOPER-BERA%2Fdecoy%2F" target="_blank">
     <img alt="Deploy on Heroku" src="https://img.shields.io/badge/HEROKU-🚀 DEPLOY NOW 🚀-red?style=for-the-badge&logo=heroku&logoColor=white&labelColor=black"/>
   </a>
 </p>
