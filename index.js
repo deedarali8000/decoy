@@ -7,7 +7,6 @@ import {
     fetchLatestBaileysVersion,
     DisconnectReason,
     useMultiFileAuthState,
-    jidNormalizedUser
 } from '@whiskeysockets/baileys';
 import { Handler, Callupdate, GroupUpdate } from './data/index.js';
 import express from 'express';
@@ -79,32 +78,13 @@ async function start() {
             browser: ["demon", "safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
-                return { conversation: "demon-slayer whatsapp user bot" };
+                if (store) {
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg.message || undefined;
+                }
+                return { conversation: "bera tech bot whatsapp user bot" };
             }
         });
-
-        // Juice WRLD Quotes for AutoBio
-        const juiceWRLDQuotes = [
-            "Legends never die.",
-            "The goal in life is not to live forever, but to create something that will.",
-            "I'm running out of time, I'm running out of patience.",
-            "Telling you right now, all you'll find is a lost soul, rich and blind.",
-            "We ain't making it past 21.",
-            "Exhale depression as the wind blows.",
-            "I still see your shadows in my room.",
-            "You left me falling and landing inside my grave.",
-            "I’m your everything, but you’re my first priority.",
-            "I stay to myself a lot.",
-            "You found another one, but I am the better one."
-        ];
-
-        // AutoBio Function
-        async function autoBio() {
-            const randomQuote = juiceWRLDQuotes[Math.floor(Math.random() * juiceWRLDQuotes.length)];
-            await Matrix.updateProfileStatus(randomQuote);
-            console.log(`✅ AutoBio Updated: ${randomQuote}`);
-        }
-        setInterval(autoBio, 60 * 1000); // Update bio every 1 minute
 
         Matrix.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect } = update;
@@ -114,57 +94,30 @@ async function start() {
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("Demon slayer Connected"));
+                    console.log(chalk.green("BERA TECH CONNECTED SUCCESSFUL"));
                     Matrix.sendMessage(Matrix.user.id, { 
-                        image: { url: "https://files.catbox.moe/7xgzln.jpg" }, 
+                        image: { url: "https://files.catbox.moe/ldetco.jpg" }, 
                         caption: `╭─────────────━┈⊷
-│ *BERA TECH BOT*
+│ *ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ*
 ╰─────────────━┈⊷
 
 ╭─────────────━┈⊷
 │ *ʙᴏᴛ ᴄᴏɴɴᴇᴄᴛᴇᴅ sᴜᴄᴄᴇssғᴜʟʟʏ*
-│ *ᴘʟᴇᴀsᴇ ғᴏʟʟᴏᴡ ᴜs ʙᴇʟᴏᴡ*
+│ ⚠️ Join our support group to avoid disconnection:
+│🔗 https://chat.whatsapp.com/JLFAlCXdXMh8lT4sxHplvG
+│
 ╰─────────────━┈⊷
 
-> *Regards Bruce Bera*`
+> *ʀᴇɢᴀʀᴅs ʙᴇʀᴀ ᴛᴇᴄʜ*`
                     });
                     initialConnection = false;
+                } else {
+                    console.log(chalk.blue("Connection reestablished after restart."));
                 }
             }
         });
 
         Matrix.ev.on('creds.update', saveCreds);
-
-        // Anti-Delete Feature
-        Matrix.ev.on("messages.update", async (update) => {
-            for (const msg of update) {
-                if (msg.update?.messageStubType === 68) { // 68 = message deleted
-                    const jid = msg.key.remoteJid;
-                    const sender = msg.key.participant || jid;
-                    console.log(`⚠️ Message Deleted: ${jid}`);
-                    Matrix.sendMessage(jid, { 
-                        text: `🚫 *Anti-Delete:* Message from @${sender.split("@")[0]} was deleted!` 
-                    }, { mentions: [jidNormalizedUser(sender)] });
-                }
-            }
-        });
-
-        // Auto View Status Fix
-        Matrix.ev.on("presence.update", async (presence) => {
-            if (presence.lastKnownPresence === "composing") {
-                try {
-                    const statuses = await Matrix.fetchStatus(presence.id);
-                    if (statuses.length > 0) {
-                        for (const status of statuses) {
-                            await Matrix.readMessages([status.key]);
-                        }
-                        console.log(`✅ Auto Viewed ${statuses.length} statuses.`);
-                    }
-                } catch (err) {
-                    console.error("❌ Auto View Status Error:", err);
-                }
-            }
-        });
 
         Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
         Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
@@ -179,14 +132,28 @@ async function start() {
         Matrix.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
+
+                // Automatically react to messages if enabled
                 if (!mek.key.fromMe && config.AUTO_REACT) {
                     const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
                     await doReact(randomEmoji, mek, Matrix);
                 }
+
+                // **STATUS VIEW FIX: Detect and View Status Automatically**
+                if (mek.key.remoteJid.endsWith('@broadcast') && mek.message?.imageMessage) {
+                    try {
+                        await Matrix.readMessages([mek.key]);
+                        console.log(chalk.green(`✅ Viewed status from ${mek.key.participant || mek.key.remoteJid}`));
+                    } catch (error) {
+                        console.error('❌ Error marking status as viewed:', error);
+                    }
+                }
+                
             } catch (err) {
-                console.error('Error during auto reaction:', err);
+                console.error('Error during auto reaction/status viewing:', err);
             }
         });
+
     } catch (error) {
         console.error('Critical Error:', error);
         process.exit(1);
@@ -195,12 +162,15 @@ async function start() {
 
 async function init() {
     if (fs.existsSync(credsPath)) {
+        console.log("🔒 Session file found, proceeding without QR code.");
         await start();
     } else {
         const sessionDownloaded = await downloadSessionData();
         if (sessionDownloaded) {
+            console.log("🔒 Session downloaded, starting bot.");
             await start();
         } else {
+            console.log("No session found or downloaded, QR code will be printed for authentication.");
             useQR = true;
             await start();
         }
@@ -209,8 +179,10 @@ async function init() {
 
 init();
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.get('/', (req, res) => {
+    res.send('CONNECTED SUCCESSFULL');
 });
 
-// Updated by Bera
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
