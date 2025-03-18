@@ -1,175 +1,132 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-     import { promises as fs } from 'fs';
-import path from 'path';
-import fetch from 'node-fetch';
-import pkg from '@whiskeysockets/baileys';
+import moment from 'moment-timezone';
+import fs from 'fs';
+import os from 'os';
+import pkg, { prepareWAMessageMedia } from '@whiskeysockets/baileys';
 const { generateWAMessageFromContent, proto } = pkg;
-import config from '../config.cjs';
+import config from '../../config.cjs';
 
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(__filename);
-const chatHistoryFile = path.resolve(__dirname, '../mistral_history.json');
+const alive = async (m, sock) => {
+  // Use the mode from your config, if needed for the menu display.
+  const mode = config.MODE;
+  const pushName = m.pushName || 'User';
 
-const mistralSystemPrompt = "You are a helpful AI assistant.";
+  // Check if the message is exactly "menu" (case-insensitive)
+  if (m.body.trim().toLowerCase() === "menu") {
+    await m.React('⏳'); // React with a loading icon
 
-async function readChatHistory() {
-    try {
-        const data = await fs.readFile(chatHistoryFile, "utf-8");
-        return JSON.parse(data) || {};
-    } catch (err) {
-        console.error('Error reading chat history:', err);
-        return {};
-    }
-}
+    // Calculate uptime
+    const uptimeSeconds = process.uptime();
+    const days = Math.floor(uptimeSeconds / (24 * 3600));
+    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    const seconds = Math.floor(uptimeSeconds % 60);
 
-async function writeChatHistory(chatHistory) {
-    try {
-        await fs.writeFile(chatHistoryFile, JSON.stringify(chatHistory, null, 2));
-    } catch (err) {
-        console.error('Error writing chat history:', err);
-    }
-}
+    // Get real time
+    const realTime = moment().tz("Asia/Karachi").format("HH:mm:ss");
+    const time2 = moment().tz("Asia/Karachi").format("HH:mm:ss");
 
-async function updateChatHistory(chatHistory, sender, role, content) {
-    if (!chatHistory[sender]) chatHistory[sender] = [];
-    chatHistory[sender].push({ role, content });
-
-    // Keep last 20 messages
-    if (chatHistory[sender].length > 20) {
-        chatHistory[sender] = chatHistory[sender].slice(-20);
-    }
-
-    await writeChatHistory(chatHistory);
-}
-
-async function deleteChatHistory(chatHistory, userId) {
-    delete chatHistory[userId];
-    await writeChatHistory(chatHistory);
-}
-
-async function sendAIResponse(m, Matrix, prompt, chatHistory) {
-    try {
-        const senderChatHistory = chatHistory[m.sender] || [];
-        const messages = [
-            { role: "system", content: mistralSystemPrompt },
-            ...senderChatHistory,
-            { role: "user", content: prompt }
-        ];
-
-        await m.React("⏳"); // React with hourglass emoji
-
-        const response = await fetch('https://api.dreaded.site/api/chatgpt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: "text-generation",
-                model: "hf/meta-llama/meta-llama-3-8b-instruct",
-                messages: messages
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
-        }
-
-        const responseData = await response.json();
-        const answer = responseData.result.response || "No response received.";
-
-        await updateChatHistory(chatHistory, m.sender, "user", prompt);
-        await updateChatHistory(chatHistory, m.sender, "assistant", answer);
-
-        // If the response contains code, format it properly
-        const codeMatch = answer.match(/```([\s\S]*?)```/);
-        if (codeMatch) {
-            const code = codeMatch[1];
-            const msg = generateWAMessageFromContent(m.from, {
-                viewOnceMessage: {
-                    message: {
-                        messageContextInfo: {
-                            deviceListMetadata: {},
-                            deviceListMetadataVersion: 2
-                        },
-                        interactiveMessage: proto.Message.InteractiveMessage.create({
-                            body: proto.Message.InteractiveMessage.Body.create({
-                                text: answer
-                            }),
-                            footer: proto.Message.InteractiveMessage.Footer.create({
-                                text: "> *Regards, Bruce Bera*"
-                            }),
-                            header: proto.Message.InteractiveMessage.Header.create({
-                                title: "Code Snippet",
-                                subtitle: "Copy this code easily",
-                                hasMediaAttachment: false
-                            }),
-                            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-                                buttons: [
-                                    {
-                                        name: "cta_copy",
-                                        buttonParamsJson: JSON.stringify({
-                                            display_text: "Copy Your Code",
-                                            id: "copy_code",
-                                            copy_code: code
-                                        })
-                                    }
-                                ]
-                            })
-                        })
-                    }
-                }
-            }, {});
-
-            await Matrix.relayMessage(m.from, msg.message, { messageId: msg.key.id });
-        } else {
-            await Matrix.sendMessage(m.from, { text: answer }, { quoted: m });
-        }
-
-        await m.React("✅"); // Success reaction
-    } catch (err) {
-        console.error('AI Response Error:', err);
-        await Matrix.sendMessage(m.from, { text: "Something went wrong. Please try again later." }, { quoted: m });
-        await m.React("❌");
-    }
-}
-
-const mistral = async (m, Matrix) => {
-    const chatHistory = await readChatHistory();
-    const text = m.body.trim().toLowerCase();
-
-    if (text === "/forget") {
-        await deleteChatHistory(chatHistory, m.sender);
-        await Matrix.sendMessage(m.from, { text: 'Conversation history deleted successfully.' }, { quoted: m });
-        return;
+    let pushwish = "";
+    if (time2 < "05:00:00") {
+      pushwish = `Good Morning 🌄`;
+    } else if (time2 < "11:00:00") {
+      pushwish = `Good Morning 🌄`;
+    } else if (time2 < "15:00:00") {
+      pushwish = `Good Afternoon 🌅`;
+    } else if (time2 < "18:00:00") {
+      pushwish = `Good Evening 🌃`;
+    } else if (time2 < "19:00:00") {
+      pushwish = `Good Evening 🌃`;
+    } else {
+      pushwish = `Good Night 🌌`;
     }
 
-    const prefix = config.PREFIX;
-    const cmd = m.body.startsWith(prefix) ? m.body.slice(prefix.length).split(' ')[0].toLowerCase() : '';
-    const prompt = m.body.slice(prefix.length + cmd.length).trim();
+    // Construct the menu message (you can adjust the menu content as needed)
+    const aliveMessage = `╭┈───────────────•*
+*⇆ HELLO ⇆* *${pushName}*
+             _${pushwish}_
+*⇆ ✨ ʙᴇʀᴀ ᴛᴇᴄʜ ᴄᴏᴍᴍᴀɴᴅ ʟɪsᴛ  ✨ ⇆*
+*╰┈───────────────•*
+*╭┈───────────────•* 
+*│  ◦* 𝙱𝙾𝚃 𝙽𝙰𝙼𝙴: ʙᴇʀᴀ ᴛᴇᴄʜ ʙᴏᴛ
+*│  ◦* 𝚅𝙴𝚁𝚂𝙸𝙾𝙽: 1.0
+*│  ◦* 𝙳𝙴𝚅: ʙʀᴜᴄᴇ ʙᴇʀᴀ
+*│  ◦* 𝙼𝙾𝙳𝙴: *${mode}*
+*│  ◦* 𝚄𝙿𝚃𝙸𝙼𝙴: *${days}d ${hours}h ${minutes}m ${seconds}s*
+*│  ◦* 𝙲𝚄𝚁𝚁𝙴𝙽𝚃 𝚃𝙸𝙼𝙴: *${realTime}*
+*╰┈───────────────•*
+*♡︎•━━━━━━☻︎━━━━━━•♡︎*
+*[ • *👻𝗕𝗘𝗥𝗔 𝗧𝗘𝗖𝗛 𝗕𝗢𝗧👻* • ]*
+*╭┈───────────────•*
+*┋*🫡𝗥𝗘𝗚𝗔𝗥𝗗𝗦 𝗕𝗥𝗨𝗖𝗘 𝗕𝗘𝗥𝗔🫡*
+*╰┈───────────────•*
+*[ •  𝙾𝚆𝙽𝙴𝚁 𝙲𝙼𝙳  ‎• ]*
+*╭┈───────────────•*
+*┋*BLOCK
+*┋*UNBLOCK
+*┋*JOIN
+*┋*LEAVE
+*┋*SETVAR
+*┋*RESTART
+*┋*PP
+*┋*Restart
+*┋*OwnerReact
+*┋*HeartReact
+*┋*Join
+*┋*Left 
+*┋*Broadcast 
+*┋*Vv  
+*┋*Vv2
+*┋*Del
+*┋*Save
+*╰┈───────────────•*
+*[ •  SEARCH CMD  ‎• ]*
+*╭┈───────────────•*
+*┋*YTS
+*┋*GOOGLE
+*┋*IMD
+*┋*IMG
+*┋*WEATHER
+*┋*PLAYSTORE
+*┋*NEWS
+*╰┈───────────────•*
+*[ •  AI CMD   ‎• ]*
+*╭┈───────────────•*
+*┋*BLACKBOXAI
+*┋*GPT
+*┋*VISIT
+*┋*DEFINE
+*╰┈───────────────•*
+...
+🌐 𝗠𝗢𝗥𝗘 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦 𝗖𝗢𝗠𝗜𝗡𝗚 𝗦𝗢𝗢𝗡! 🌐`;
 
-    const validCommands = ['ai', 'gpt', 'bera'];
+    await m.React('✅'); // React with a success icon
 
-    if (validCommands.includes(cmd)) {
-        if (!prompt) {
-            await Matrix.sendMessage(m.from, { text: 'Please provide a prompt.' }, { quoted: m });
-            return;
-        }
-
-        await sendAIResponse(m, Matrix, prompt, chatHistory);
-    }
+    // Send the constructed menu message back to the chat
+    sock.sendMessage(
+      m.from,
+      {
+        text: aliveMessage,
+        contextInfo: {
+          isForwarded: false,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363315115438245@newsletter',
+            newsletterName: "𝗕𝗘𝗥𝗔 𝗧𝗘𝗖𝗛 𝗕𝗢𝗧",
+            serverMessageId: -1,
+          },
+          forwardingScore: 999,
+          externalAdReply: {
+            title: "✨ 𝗕𝗘𝗥𝗔 𝗧𝗘𝗖𝗛 𝗕𝗢𝗧 ✨",
+            body: "BERA TECH BOT MENU",
+            thumbnailUrl: 'https://files.catbox.moe/ld9uw5.jpg',
+            sourceUrl: 'https://files.catbox.moe/tdhhl5.mp3',
+            mediaType: 1,
+            renderLargerThumbnail: true,
+          },
+        },
+      },
+      { quoted: m }
+    );
+  }
 };
 
-export default mistral;    
-
-
-
+export default alive;
