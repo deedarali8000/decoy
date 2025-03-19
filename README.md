@@ -23,7 +23,7 @@
 ✨ Generate your **secure session ID** by clicking the button below:  
 
 <p align="center">
-  <a href="https://bera-tech-server.vercel.app" target="_blank">
+  <a href="https://projext-session-server-a9643bc1be6b.herokuapp.com/" target="_blank">
     <img alt="Pair Code" src="https://img.shields.io/badge/PAIR CODE-⚡ GET CODE NOW ⚡-purple?style=for-the-badge&logo=whatsapp&logoColor=white&labelColor=black"/>
   </a>
 </p>
